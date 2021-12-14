@@ -43,3 +43,4 @@ sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo kubeadm join 128.232.80.13:6443 --token 8fqu93.gd1zbyjva4buivnm --discovery-token-ca-cert-hash sha256:dfbb8d3416e1c063cea27d7ba2ebef7f304025f798c3401b5e92ad223c8c1d43
+pip install redis
