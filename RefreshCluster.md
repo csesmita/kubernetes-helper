@@ -16,5 +16,5 @@ kubectl run -i --tty redis-image --image redis --command "/bin/sh"
 kubectl attach redis-image -c redis-image -i -t
 
 Nodes-
-sudo kubeadm join 128.232.80.13:6443 --token ju3bzu.jaemh7qobo6w1a6r \
-        --discovery-token-ca-cert-hash sha256:38de434e094fe9f95d5eae4adac88979a0261f2711d81d897542d9ca84c16fff
+sudo kubeadm join 128.232.80.13:6443 --token 0qshgj.2y0cyd7xvp1r5i1v \
+        --discovery-token-ca-cert-hash sha256:abe80e46c3015541832ed616d43a6542023065b9588c7bc4c1fd15d22bc0ac70
