@@ -2,12 +2,14 @@
 import rediswq
 import os
 import subprocess
+from threading import Thread
 from datetime import datetime
-from time import sleep
-from time import time
+from time import sleep, time, mktime
 from collections import defaultdict
+from numpy import percentile
 
 job_to_podlist = defaultdict(list)
+SPEEDUP = 10
 
 #end and start are of the form HH:MM:SS.SSSSSS
 def timeDiff(end, start):
@@ -15,13 +17,16 @@ def timeDiff(end, start):
     start_time = datetime.strptime(start, '%H:%M:%S.%f')
     return end_time - start_time
 
+# Returns difference in microseconds
+def timeDiffMicro(end, start):
+    e1 = datetime.strptime(end, '%H:%M:%S.%f')
+    s1 = datetime.strptime(start, '%H:%M:%S.%f')
+    ms_diff = (mktime(e1.utctimetuple()) - mktime(s1.utctimetuple())) * 1000000 + e1.microsecond - s1.microsecond
+    return int(ms_diff)
+
 def main():
-    # Read in the job template file
-    with open('job.yaml', 'r') as file :
-        job_tmpl = file.read()
-    host = "10.106.246.16"
-    jobid = 0
-    start_epoch = 0.0
+    jobid = 0 
+    start_epoch = 0.0 
 
     # Process workload file
     f = open('temp.tr', 'r')
@@ -30,36 +35,33 @@ def main():
         startTime = time()
         if start_epoch == 0.0:
             start_epoch = startTime
-        arrival_time = float(row[0])
-        num_tasks = int(row[1])
-        est_time = float(row[2])
-        actual_duration = []
-        for index in range(num_tasks):
-            actual_duration.append(float(row[3+index]))
+        arrival_time = float(row[0])/float(SPEEDUP)
         # Replace the template file with actual values
         jobid += 1
         jobstr = "job"+str(jobid)
-        filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks))
         filename = jobstr+".yaml"
-        with open(filename, 'w') as file:
-          file.write(filedata)
-        q = rediswq.RedisWQ(name=jobstr, host=host)
-        q.rpush(actual_duration)
         #Cleanup all jobs that have completed till now.
         #Needn't be the most aged job. Any orderinng is fine.
-        add_pod_info()
+        #add_pod_info()
         #Start the job
         endTime = time()
         sleep_time = start_epoch + arrival_time - endTime
         if sleep_time < 0:
+            print "Script loop started at", startTime,"and ran for", endTime - startTime,"sec but sleep is -ve at", sleep_time
+            print "Next job due at", start_epoch + arrival_time, "but time now is", endTime
             raise AssertionError('script overran job interval!')
         sleep(sleep_time)
-        print "Starting job at", time() - start_epoch
-        subprocess.check_output(["kubectl","apply", "-f", filename])
-        subprocess.check_output(["rm", "-rf", filename])
+        thr = Thread(target=apply_job, args=(filename, start_epoch), kwargs={})
+        thr.start()
 
+    f.close()
     #Process scheduler stats.    
     stats()
+
+def apply_job(filename, start_epoch):
+        #This command takes about 0.25s. So jobs can't arrive faster than this.
+        subprocess.check_output(["kubectl","apply", "-f", filename])
+        subprocess.check_output(["rm", "-rf", filename])
 
 def stats():
     pending_jobs = True
@@ -73,7 +75,6 @@ def stats():
 def add_pod_info():
     jobs = subprocess.check_output(["kubectl", "get", "job", "--server-print=false", "--no-headers"])
     if jobs == '':
-        print "returning false since no resource..."
         return False
     for job in jobs.split('\n'):
         job = job.split()
@@ -88,7 +89,6 @@ def add_pod_info():
             print "Job", jobname,"has not yet completed"
             continue
         # This job has completed.
-        print "Job", jobname,"has COMPLETED"
         pods_list = subprocess.check_output(['kubectl','get', 'pods', '--selector=job-name='+jobname, '--server-print=false', '--no-headers'])
         for pod in pods_list.splitlines():
             podname = pod.split()[0]
@@ -124,7 +124,7 @@ def process():
                 if sch_queue_eject in log:
                     if queue_add_time == 0.0:
                         raise AssertionError('Got a queue eject time, but not a queue add time')
-                    queue_eject_time = log.split(' ')[1]
+                                            queue_eject_time = log.split(' ')[1]
                     queue_time = timeDiff(queue_eject_time, queue_add_time)
                     continue
                 if sch_attempt_schedule in log:
