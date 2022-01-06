@@ -90,7 +90,8 @@ def add_pod_info():
         if job == []:
            break
         jobname = job[0]
-        #Check if the job has completed
+        #Check if the job has completed.
+        #TODO - Also check if the Status is Failed or Complete. Bail out if Failed.
         has_completed = subprocess.check_output(["kubectl", "get", "jobs", jobname, "-o","jsonpath='{.status.completionTime}'"])
         try:
             datetime.strptime(has_completed, '\'%Y-%m-%dT%H:%M:%SZ\'')
