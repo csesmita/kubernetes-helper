@@ -16,6 +16,15 @@ from numpy import percentile
 job_to_podlist = {}
 SPEEDUP = 1
 
+#Stats printed out.
+qtimes = []
+algotimes = []
+pod_start = {}
+pod_end = {}
+pod_node = {}
+pod_durations = {}
+pod_qdiff= {}
+
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
 
@@ -26,11 +35,40 @@ def timeDiffMilliseconds(e1, s1):
     ms_diff = (mktime(e1.utctimetuple()) - mktime(s1.utctimetuple())) * 1000000 + e1.microsecond - s1.microsecond
     return ms_diff * 1.0 / 1000
 
+def setup():
+    # Read in the job template file
+    with open('job.yaml', 'r') as file :
+        job_tmpl = file.read()
+    host = "10.104.213.87"
+    jobid = 0
+
+    # Process workload file
+    f = open('temp.tr', 'r')
+    for row in f:
+        row = row.split()
+        num_tasks = int(row[1])
+        est_time = float(row[2])
+        actual_duration = []
+        for index in range(num_tasks):
+            actual_duration.append(float(row[3+index]))
+        # Replace the template file with actual values
+        jobid += 1
+        jobstr = "job"+str(jobid)
+        filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks))
+        filename = jobstr+".yaml"
+        with open(filename, 'w') as file:
+          file.write(filedata)
+        q = rediswq.RedisWQ(name=jobstr, host=host)
+        q.rpush(actual_duration)
+    f.close()
+
+
 def main():
     jobid = 0
     start_epoch = 0.0
     threads = []
 
+    setup()
     # Process workload file
     f = open('temp.tr', 'r')
     for row in f:
@@ -84,8 +122,9 @@ def stats(num_jobs):
     log_file_name = '_'.join(["logs", "X"+str(SPEEDUP), str(num_jobs)])
     while pending_jobs:
         pending_jobs = add_pod_info()
-        process(compiled, log_file_name)
+        process(compiled)
         sleep(5)
+    post_process(log_file_name)
 
 def add_pod_info():
     if len(job_to_podlist.keys()) == 0:
@@ -118,7 +157,7 @@ def add_pod_info():
             job_to_podlist[jobname].append(podname)
     return True
 
-def process(compiled, log_file_name):
+def process(compiled):
     QUEUE_ADD_LOG    = "Add event for unscheduled pod"
     QUEUE_DELETE_LOG = "Delete event for unscheduled pod"
     START_SCH_LOG    = "About to try and schedule pod"
@@ -126,14 +165,6 @@ def process(compiled, log_file_name):
     BIND_LOG         = "Attempting to bind pod to node"
 
     default_time = timedelta(microseconds=0)
-    qtimes = []
-    pod_start = {}
-    pod_end = {}
-    pod_node = {}
-    pod_durations = {}
-    pod_qdiff= {}
-    algotimes = []
-    log_file = open(log_file_name, 'w')
     for jobname,pods in job_to_podlist.items():
         # Fetch all pod related stats for each pod.
         has_pods = False
@@ -209,11 +240,13 @@ def process(compiled, log_file_name):
             algotimes.append(timeDiffMilliseconds(scheduling_algorithm_time, default_time))
         if has_pods:
             del job_to_podlist[jobname]
+
+def post_process(log_file_name):
+    log_file = open(log_file_name, 'w')
     qtimes.sort()
     algotimes.sort()
-    print >> log_file, logname,": Total number of pods evaluated", len(qtimes)
+    print >> log_file, "Total number of pods evaluated", len(qtimes)
     print >> log_file, "Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99)
-    print >> log_file, logname,": Total number of pods evaluated", len(algotimes)
     print >> log_file, "Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99)
     '''
     pods_ordered = (sorted(pod_start.items(), key=operator.itemgetter(1)))

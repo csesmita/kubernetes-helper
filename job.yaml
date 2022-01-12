@@ -14,9 +14,10 @@ spec:
         image: sv440/sv440:job-wq
         env:
         - name: REDIS_SERVICE_HOST
-          value: "10.102.79.76"
+          value: "10.104.213.87"
         - name: JOBID
           value: "$JOBID"
       imagePullSecrets:
       - name: regcred
       restartPolicy: OnFailure
+  backoffLimit: 100000
