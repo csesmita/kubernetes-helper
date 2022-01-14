@@ -113,12 +113,11 @@ def stats(num_jobs):
     #Look for 12:14:58.422793 pattern in logs
     pattern = '\d{2}:\d{2}:\d{2}\.\d{6}'
     compiled = re.compile(pattern)
-    log_file_name = '_'.join(["logs", "X"+str(SPEEDUP), str(num_jobs)])
     while pending_jobs:
         pending_jobs = add_pod_info()
         process(compiled)
         sleep(5)
-    post_process(log_file_name)
+    post_process()
 
 def add_pod_info():
     if len(job_to_podlist.keys()) == 0:
@@ -217,14 +216,12 @@ def process(compiled):
         if has_pods:
             del job_to_podlist[jobname]
 
-def post_process(log_file_name):
-    log_file = open(log_file_name, 'w')
+def post_process():
     qtimes.sort()
     algotimes.sort()
-    print >> log_file, "Total number of pods evaluated", len(qtimes)
-    print >> log_file, "Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99)
-    print >> log_file, "Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99)
-    log_file.close()
+    print "Total number of pods evaluated", len(qtimes)
+    print "Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99)
+    print "Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99)
 
 if __name__ == '__main__':
     main()
