@@ -3,14 +3,11 @@ import rediswq
 import os
 import re
 import subprocess
-import sys
-import subprocess
-import operator
 from threading import Thread
 from datetime import timedelta, datetime
 from time import sleep, time, mktime
-from collections import defaultdict
 from numpy import percentile
+
 
 #Maintains job to pod list mapping for completed jobs.
 job_to_podlist = {}
@@ -28,12 +25,9 @@ pod_qdiff= {}
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
 
-# Returns difference in milliseconds
+# Returns difference in two timedeltas in seconds
 def timeDiffMilliseconds(e1, s1):
-    #e1 = extractDateTime(end)
-    #s1 = extractDateTime(start)
-    ms_diff = (mktime(e1.utctimetuple()) - mktime(s1.utctimetuple())) * 1000000 + e1.microsecond - s1.microsecond
-    return ms_diff * 1.0 / 1000
+    return (e1 - s1).total_seconds()
 
 def setup():
     # Read in the job template file
@@ -218,25 +212,7 @@ def process(compiled):
                     nodename = log.split('node=')[1]
                     continue
             print "Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename
-            '''
-            pod_node[podname] = nodename
-            pod_end[podname] = queue_eject_time
-            pod_start[podname] = queue_add_time
-            logs = subprocess.check_output(['kubectl','logs',podname]).split('\n')
-            for log in logs:
-                if "Working on " not in log:
-                    continue
-                duration = float(log.split('Working on ')[1])
-                pod_durations[podname] = duration
-                break
-            #TODO - If Docker removes its files, then the following assertionn will hit.
-            #Instead, listen to job events and put back GC in kube-controller-manager.
-            if podname not in pod_durations.keys():
-                raise AssertionError('Check pod', podname,"logs. It has not worked on anything?")
-            '''
-            qdiff = timeDiffMilliseconds(queue_time, default_time)
-            #pod_qdiff[podname]=qdiff
-            qtimes.append(qdiff)
+            qtimes.append(timeDiffMilliseconds(queue_time, default_time))
             algotimes.append(timeDiffMilliseconds(scheduling_algorithm_time, default_time))
         if has_pods:
             del job_to_podlist[jobname]
@@ -248,12 +224,6 @@ def post_process(log_file_name):
     print >> log_file, "Total number of pods evaluated", len(qtimes)
     print >> log_file, "Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99)
     print >> log_file, "Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99)
-    '''
-    pods_ordered = (sorted(pod_start.items(), key=operator.itemgetter(1)))
-    for podname, start in pods_ordered:
-        if podname in pod_qdiff.keys():
-            print >> log_file, "Pod", podname,"started at", start, "in queue till", pod_end[podname],"assigned node", pod_node[podname], "duration", pod_durations[podname], "queue time", pod_qdiff[podname]
-    '''
     log_file.close()
 
 if __name__ == '__main__':
