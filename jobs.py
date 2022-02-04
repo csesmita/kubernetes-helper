@@ -7,7 +7,7 @@ from threading import Thread
 from datetime import timedelta, datetime
 from time import sleep, time, mktime
 from numpy import percentile
-
+from random import randint
 
 #Maintains job to pod list mapping for completed jobs.
 job_to_podlist = {}
@@ -26,14 +26,14 @@ def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
 
 # Returns difference in two timedeltas in seconds
-def timeDiffMilliseconds(e1, s1):
+def timeDiff(e1, s1):
     return (e1 - s1).total_seconds()
 
 def setup():
     # Read in the job template file
     with open('job.yaml', 'r') as file :
         job_tmpl = file.read()
-    host = "10.104.213.87"
+    host = "10.100.233.116"
     jobid = 0
 
     # Process workload file
@@ -47,8 +47,10 @@ def setup():
             actual_duration.append(float(row[3+index]))
         # Replace the template file with actual values
         jobid += 1
-        jobstr = "job"+str(jobid)
-        filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks))
+        jobstr = "".join(["job",str(jobid)])
+        # Pick a number from 1 - 10. This job will be scheduled by that scheduler.
+        schedulername = "".join(["scheduler",str(randint(1,10))])
+        filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$SCHEDULER_NAME", schedulername)
         filename = jobstr+".yaml"
         with open(filename, 'w') as file:
           file.write(filedata)
@@ -141,12 +143,11 @@ def add_pod_info():
             podstrs = pod.split()
             podname = podstrs[0]
             status = podstrs[2]
-            if status == "OutOfpods" or status == "Evicted":
+            if status != "Completed":
+                print "Pod", podname, "is in ", status," state, but the job is complete. Skipping."
                 #Known error. This happens when etcd is slower than events in the cluster.
                 #However, the job has sucessfully completed. So, look for other pods.
                 continue
-            if status != "Completed":
-                raise AssertionError("Pod" + podname + "is not in a completed state!")
             job_to_podlist[jobname].append(podname)
     return True
 
@@ -211,8 +212,8 @@ def process(compiled):
                     nodename = log.split('node=')[1]
                     continue
             print "Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename
-            qtimes.append(timeDiffMilliseconds(queue_time, default_time))
-            algotimes.append(timeDiffMilliseconds(scheduling_algorithm_time, default_time))
+            qtimes.append(timeDiff(queue_time, default_time))
+            algotimes.append(timeDiff(scheduling_algorithm_time, default_time))
         if has_pods:
             del job_to_podlist[jobname]
 

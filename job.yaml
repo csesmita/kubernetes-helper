@@ -9,12 +9,13 @@ spec:
     metadata:
       name: $JOBID
     spec:
+      schedulerName: $SCHEDULER_NAME
       containers:
       - name: c
         image: sv440/sv440:job-wq
         env:
         - name: REDIS_SERVICE_HOST
-          value: "10.104.213.87"
+          value: "10.100.233.116"
         - name: JOBID
           value: "$JOBID"
       imagePullSecrets:
