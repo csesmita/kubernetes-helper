@@ -11,6 +11,17 @@ mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 kubectl create secret docker-registry regcred --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
 
 
+Similarly, create the regcred secret for my-scheduler service account -
+kubectl create secret docker-registry regcred -n kube-system --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred -n kube-system --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
+
+
+kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+
+After applying scheduler1, etc confirm regcred has been added. 
+kubectl get pod scheduler1-xxx -n kube-system -o=jsonpath='{.spec.imagePullSecrets[0].name}{"\n"}'
+
+
+
 kubectl apply -f redis-pod.yaml && kubectl apply -f redis-service.yaml
 
 
