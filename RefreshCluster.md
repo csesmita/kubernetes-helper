@@ -42,3 +42,9 @@ Nodes-
 
 sudo kubeadm join 128.232.80.13:6443 --token 0qshgj.2y0cyd7xvp1r5i1v \
         --discovery-token-ca-cert-hash sha256:abe80e46c3015541832ed616d43a6542023065b9588c7bc4c1fd15d22bc0ac70
+        
+        
+        
+
+Additional Notes - 
+1. Syslog is used for logs' shipping. /etc/rsyslog.conf has to be modified for server (to allow logs on udp on port 514) and on the client (to export all syslog.* to caelum-xxx:514). Docker logging config (in /etc/docker/daemon.json) should point to log-driver as syslog. Restart systemctl after changes to rsyslog or docker services. Fluentd, etc not needed.
