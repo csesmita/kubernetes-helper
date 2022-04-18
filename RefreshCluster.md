@@ -30,7 +30,7 @@ kubectl apply -f redis-pod.yaml && kubectl apply -f redis-service.yaml
 
 //Change Redis IP in files - create script and in job.yaml. No docker image rebuilding required. 
 
-// Change logging levels of kube-scheduler by copying from /tmp, and --terminated-pod-gc-threshold by copying kube-controller-manager from /tmp. 	
+// Change logging levels of kube-scheduler by copying from /tmp, and --terminated-pod-gc-threshold by copying kube-controller-manager from /tmp. //Copy kube-scheduler scheduler.conf into schedulerconf/ if using the multi profile with schedulerconf/	
 
 // Copy config dir from 104 to 306.
 //scp -r /home/sv440/.kube/  caelum-306:
