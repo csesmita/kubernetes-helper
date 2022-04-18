@@ -10,12 +10,15 @@ mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 kubectl create secret docker-registry regcred --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
 
+kubectl apply -f  my-scheduler.yaml 
 
 Similarly, create the regcred secret for my-scheduler service account -
 kubectl create secret docker-registry regcred -n kube-system --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred -n kube-system --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
 
 
-kubectl patch serviceaccount default -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+kubectl patch serviceaccount my-scheduler -n kube-system  -p '{"imagePullSecrets": [{"name": "regcred"}]}'
+
+For custom scheduler instances - First create the service account (my-scheduler) then apply the scheduler configs.
 
 After applying scheduler1, etc confirm regcred has been added. 
 kubectl get pod scheduler1-xxx -n kube-system -o=jsonpath='{.spec.imagePullSecrets[0].name}{"\n"}'
@@ -25,13 +28,12 @@ kubectl get pod scheduler1-xxx -n kube-system -o=jsonpath='{.spec.imagePullSecre
 kubectl apply -f redis-pod.yaml && kubectl apply -f redis-service.yaml
 
 
-kubectl run -i --tty redis-image --image redis --command "/bin/sh"	
-
-kubectl attach redis-image -c redis-image -i -t
-
 //Change Redis IP in files - create script and in job.yaml. No docker image rebuilding required. 
 
 // Change logging levels of kube-scheduler by copying from /tmp, and --terminated-pod-gc-threshold by copying kube-controller-manager from /tmp. 	
+
+// Copy config dir from 104 to 306.
+//scp -r /home/sv440/.kube/  caelum-306:
 
 // Set taint on 306. Kubectl taint nodes caelum-306 key1=value1:NoSchedule. 
 
