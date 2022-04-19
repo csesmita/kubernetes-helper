@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-# Based on http://peter-hoffmann.com/2012/python-simple-queue-redis-queue.html 
-# and the suggestion in the redis documentation for RPOPLPUSH, at 
-# http://redis.io/commands/rpoplpush, which suggests how to implement a work-queue.
-
+# Based on https://kubernetes.io/examples/application/job/redis/rediswq.py
+# Adapted for storing actual running times of tasks from workload files.
+# Allows multiple pods to be working on the same task. Leaves the management
+# of such pods to the job controller.
+# This code assumes distinct values in queue.
  
 import redis
 import uuid
@@ -45,7 +46,7 @@ class RedisWQ(object):
         return self._db.llen(self._main_q_key)
 
     def _processing_qsize(self):
-        """Return the size of the main queue."""
+        """Return the size of the processing queue."""
         return self._db.llen(self._processing_q_key)
 
     def empty(self):
@@ -55,21 +56,12 @@ class RedisWQ(object):
         """
         return self._main_qsize() == 0 and self._processing_qsize() == 0
 
-# TODO: implement this
-#    def check_expired_leases(self):
+# check_expired_leases(self):
 #        """Return to the work queueReturn True if the queue is empty, False otherwise."""
-#        # Processing list should not be _too_ long since it is approximately as long
-#        # as the number of active and recently active workers.
-#        processing = self._db.lrange(self._processing_q_key, 0, -1)
-#        for item in processing:
-#          # If the lease key is not present for an item (it expired or was 
-#          # never created because the client crashed before creating it)
-#          # then move the item back to the main queue so others can work on it.
-#          if not self._lease_exists(item):
-#            TODO: transactionally move the key from processing queue to
-#            to main queue, while detecting if a new lease is created
-#            or if either queue is modified.
-
+# This function is not required since this is just a store to ensure all tasks are completed
+# atleast once (not exaqctly once). The earliest finishing pod amongst these will be completed
+# while the rest will fail with an os.EX_NOTFOUND. That should fail the container (and hence
+# the pod).
     def _itemkey(self, item):
         """Returns a string that uniquely identifies an item (bytes)."""
         return hashlib.sha224(item).hexdigest()
@@ -78,27 +70,37 @@ class RedisWQ(object):
         """True if a lease on 'item' exists."""
         return self._db.exists(self._lease_key_prefix + self._itemkey(item))
 
-    def lease(self, lease_secs=60, block=True, timeout=None):
+    def lease(self):
         """Begin working on an item the work queue. 
 
-        Lease the item for lease_secs.  After that time, other
-        workers may consider this client to have crashed or stalled
-        and pick up the item instead.
-
-        If optional args block is true and timeout is None (the default), block
-        if necessary until an item is available."""
-        if block:
-            item = self._db.brpoplpush(self._main_q_key, self._processing_q_key, timeout=timeout)
-        else:
-            item = self._db.rpoplpush(self._main_q_key, self._processing_q_key)
+        Lease the item for the value specified in the item (if one is found).
+        After that time, other workers may consider this client to have crashed or stalled
+        and pick up the item instead. Read comment for check_expired_lease().
+        """
+        item = self._db.rpoplpush(self._main_q_key, self._processing_q_key)
         if item:
             # Record that we (this session id) are working on a key.  Expire that
             # note after the lease timeout.
             # Note: if we crash at this line of the program, then GC will see no lease
             # for this item a later return it to the main queue.
             itemkey = self._itemkey(item)
+            itemstr = item.decode("utf-8")
+            lease_sec = int(itemstr) + 1
             self._db.setex(self._lease_key_prefix + itemkey, lease_secs, self._session)
         return item
+
+    def get_expired(self):
+        """Move one item with expired lease from processing to main queue."""
+        processing_qsize = self._db._processing_qsize()
+        for item in self._db.lrange(self._processing_q_key, 0, -1):
+          if not self._lease_exists(item):
+            # Not safe for distributed execution.
+            # So, ensure the first of the pods completes execution
+            # even if that means a second starts a redundant run.
+            self._db.rpush(self._main_q_key, item)
+            self._db.lrem(self._processing_q_key, 1, item)
+            return True
+        return False
 
     def complete(self, value):
         """Complete working on the item with 'value'.
@@ -107,11 +109,13 @@ class RedisWQ(object):
         other worker may have picked it up.  There is no indication
         of what happened.
         """
-        self._db.lrem(self._processing_q_key, 0, value)
+        count = self._db.lrem(self._processing_q_key, -1, value)
         # If we crash here, then the GC code will try to move the value, but it will
         # not be here, which is fine.  So this does not need to be a transaction.
         itemkey = self._itemkey(value)
         self._db.delete(self._lease_key_prefix + itemkey)
+        return count
+
     def rpush(self, value):
         self._db.rpush(self._main_q_key, *value)
 

@@ -8,12 +8,19 @@ from datetime import timedelta, datetime
 from time import sleep, time, mktime
 from numpy import percentile
 from random import randint
+import collections
+import sys
 
+#TODO - Handle dup;licate values when inserting into redis.
 #Maintains job to pod list mapping for completed jobs.
 job_to_podlist = {}
-SPEEDUP = 1
-
+SPEEDUP = 20
+schedulertojob = collections.defaultdict(int)
+job_to_numtasks = {}
+job_start_time = {}
+job_response_time = {}
 #Stats printed out.
+jrt = []
 qtimes = []
 algotimes = []
 pod_start = {}
@@ -29,11 +36,18 @@ def extractDateTime(timestr):
 def timeDiff(e1, s1):
     return (e1 - s1).total_seconds()
 
-def setup():
+def setup(is_central, num_sch):
     # Read in the job template file
-    with open('job.yaml', 'r') as file :
+    job_file = "job_d.yaml"
+    if is_central:
+        job_file = "job_c.yaml"
+        print "CENTRALIZED SCHEDULER"
+    else:
+        print "DECENTRALIZED SCHEDULER"
+     
+    with open(job_file, 'r') as file :
         job_tmpl = file.read()
-    host = "10.100.233.116"
+    host = "10.110.132.160"
     jobid = 0
 
     # Process workload file
@@ -48,14 +62,22 @@ def setup():
         # Replace the template file with actual values
         jobid += 1
         jobstr = "".join(["job",str(jobid)])
-        # Pick a number from 1 - 10. This job will be scheduled by that scheduler.
-        schedulername = "".join(["scheduler",str(randint(1,10))])
-        filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$SCHEDULER_NAME", schedulername)
+        job_to_numtasks[jobstr]=num_tasks
+        filedata = ""
+        if not is_central:
+            # Pick a number from 1 - num_sch. This job will be scheduled by that scheduler.
+            schedulername = "".join(["scheduler",str(randint(1,num_sch))])
+            schedulertojob[schedulername] += num_tasks
+            filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$SCHEDULER_NAME", schedulername).replace("$ESTRUNTIME", str(est_time))
+        else:
+            filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$ESTRUNTIME", str(est_time))
         filename = jobstr+".yaml"
         with open(filename, 'w') as file:
           file.write(filedata)
         q = rediswq.RedisWQ(name=jobstr, host=host)
+        #q.delete(jobstr)
         q.rpush(actual_duration)
+        print "Wrote to redis"
     f.close()
 
 
@@ -64,7 +86,13 @@ def main():
     start_epoch = 0.0
     threads = []
 
-    setup()
+    if len(sys.argv) != 3:
+        print "Incorrect number of parameters"
+        sys.exit(1)
+
+    is_central = sys.argv[1] == 'c'
+    num_sch = int(sys.argv[2])
+    setup(is_central, num_sch)
     # Process workload file
     f = open('temp.tr', 'r')
     for row in f:
@@ -84,8 +112,9 @@ def main():
         if sleep_time < 0:
             print "Script loop started at", startTime,"and ran for", endTime - startTime,"sec but sleep is -ve at", sleep_time
             print "Next job due at", start_epoch + arrival_time, "but time now is", endTime
-            raise AssertionError('script overran job interval!')
-        sleep(sleep_time)
+            #raise AssertionError('script overran job interval!')
+        else:    
+            sleep(sleep_time)
         #"kubectl apply" is an expensive operation.
         #Spawn a background thread that will actually start the job.
         #apply_job(filename, jobstr, start_epoch)
@@ -106,7 +135,10 @@ def main():
 def apply_job(filename, jobstr, start_epoch):
         #This command takes about 0.25s. So jobs can't arrive faster than this.
         subprocess.check_output(["kubectl","apply", "-f", filename])
-        print "Starting", jobstr, "at", time() - start_epoch
+        start_time = time()
+        print "Starting", jobstr, "at", start_time - start_epoch
+        job_response_time[jobstr] = 0
+        job_start_time[jobstr] = start_time
 
 def stats(num_jobs):
     pending_jobs = True
@@ -127,7 +159,11 @@ def add_pod_info():
     for jobname in job_to_podlist.keys():
         has_completed = subprocess.check_output(["kubectl", "get", "jobs", jobname, "-o","jsonpath='{.status.completionTime}'"])
         try:
-            datetime.strptime(has_completed, '\'%Y-%m-%dT%H:%M:%SZ\'')
+            dt = datetime.strptime(has_completed, '\'%Y-%m-%dT%H:%M:%SZ\'')
+            completed_sec_from_epoch = (dt-datetime(1970,1,1)).total_seconds()
+            job_completion = completed_sec_from_epoch - job_start_time[jobname]
+            if job_completion > job_response_time[jobname]:
+                job_response_time[jobname] = job_completion
             #Check if the job has completed
             is_complete = subprocess.check_output(["kubectl", "get", "jobs", jobname, "-o", "jsonpath='{.status.conditions}'"])
             if "\"type\":\"Complete\"" not in is_complete:
@@ -161,9 +197,8 @@ def process(compiled):
     default_time = timedelta(microseconds=0)
     for jobname,pods in job_to_podlist.items():
         # Fetch all pod related stats for each pod.
-        has_pods = False
+        pods_evaluated = 0
         for podname in pods:
-            has_pods = True
             #Two outputs for this pod
             queue_time = timedelta(microseconds=0)
             scheduling_algorithm_time = timedelta(microseconds=0)
@@ -187,9 +222,9 @@ def process(compiled):
                 #This log happens exactly once
                 if QUEUE_DELETE_LOG in log:
                     queue_eject_time = extractDateTime(compiled.search(log).group(0))
-                    print "Job", jobname,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time,
+                    #print "Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time
                     queue_time = queue_eject_time - queue_add_time
-                    break
+                    break 
                 if START_SCH_LOG in log:
                     if start_sch_time > datetime.min:
                         raise AssertionError("Check calculcations for pod for start sch time"+ podname)
@@ -211,18 +246,25 @@ def process(compiled):
                     start_sch_time = datetime.min
                     nodename = log.split('node=')[1]
                     continue
-            print "Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename
+            #print "Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename
             qtimes.append(timeDiff(queue_time, default_time))
             algotimes.append(timeDiff(scheduling_algorithm_time, default_time))
-        if has_pods:
-            del job_to_podlist[jobname]
+            pods_evaluated += 1
+            if pods_evaluated == job_to_numtasks[jobname]:
+                print "Job", jobname, "has JRT", job_response_time[jobname]
+                jrt.append(job_response_time[jobname])
+                del job_to_podlist[jobname]
+                break
 
 def post_process():
     qtimes.sort()
     algotimes.sort()
+    jrt.sort()
     print "Total number of pods evaluated", len(qtimes)
     print "Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99)
     print "Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99)
+    print "Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99)
+    print "Schedulers and number of tasks they assigned", schedulertojob
 
 if __name__ == '__main__':
     main()
