@@ -75,7 +75,8 @@ def setup(is_central, num_sch):
         with open(filename, 'w') as file:
           file.write(filedata)
         q = rediswq.RedisWQ(name=jobstr, host=host)
-        #q.delete(jobstr)
+        # Cleanup possible remnants of an older run
+        q.delete(jobstr)
         q.rpush(actual_duration)
         print "Wrote to redis"
     f.close()

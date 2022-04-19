@@ -85,13 +85,12 @@ class RedisWQ(object):
             # for this item a later return it to the main queue.
             itemkey = self._itemkey(item)
             itemstr = item.decode("utf-8")
-            lease_sec = int(itemstr) + 1
+            lease_secs = int(float(itemstr)) + 1
             self._db.setex(self._lease_key_prefix + itemkey, lease_secs, self._session)
         return item
 
     def get_expired(self):
         """Move one item with expired lease from processing to main queue."""
-        processing_qsize = self._db._processing_qsize()
         for item in self._db.lrange(self._processing_q_key, 0, -1):
           if not self._lease_exists(item):
             # Not safe for distributed execution.
@@ -118,6 +117,10 @@ class RedisWQ(object):
 
     def rpush(self, value):
         self._db.rpush(self._main_q_key, *value)
+
+    # Clear the key if it exists
+    def delete(self, name):
+        self._db.delete(name)
 
 # TODO: add functions to clean up all keys associated with "name" when
 # processing is complete.

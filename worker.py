@@ -21,18 +21,18 @@ while not q.empty():
     time.sleep(float(itemstr))
     count = q.complete(item)
     if count == 0:
-      print "Work finished by some other pod!"
-      sys.exit(os.EX_NOTFOUND)
+      print("Work finished by some other pod!")
+      sys.exit("Work finished by some other pod!")
     done=True
     break
   else:
     #See if any of the leases have expired, so they can be processed next.
     has_expired = q.get_expired()
     if has_expired == False:
-      print "Nothing to work on, and no expired leases!"
-      sys.exit(os.EX_NOTFOUND)
+      print("Nothing to work on, and no expired leases!")
+      sys.exit("Nothing to work on, and no expired leases!")
 if done:
     print("Work completed by this task")
 else:
     print("Queue empty, so no work done by this task.")
-    sys.exit(os.EX_NOTFOUND)
+    sys.exit("Queue empty, so no work done by this task.")
