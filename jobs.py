@@ -78,7 +78,6 @@ def setup(is_central, num_sch):
         # Cleanup possible remnants of an older run
         q.delete(jobstr)
         q.rpush(actual_duration)
-        print "Wrote to redis"
     f.close()
 
 
@@ -175,6 +174,7 @@ def add_pod_info():
             #print jobname,"has not completed yet. Got error", e
             continue
         # This job has completed.
+        # TODO- Find the list of pods by querying the job.
         pods_list = subprocess.check_output(['kubectl','get', 'pods', '--selector=job-name='+jobname, '--no-headers'])
         for pod in pods_list.splitlines():
             podstrs = pod.split()
