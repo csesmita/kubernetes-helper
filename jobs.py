@@ -16,6 +16,7 @@ import sys
 job_to_podlist = {}
 SPEEDUP = 20
 schedulertojob = collections.defaultdict(int)
+job_to_scheduler = {}
 job_to_numtasks = {}
 job_start_time = {}
 job_response_time = {}
@@ -28,6 +29,8 @@ pod_end = {}
 pod_node = {}
 pod_durations = {}
 pod_qdiff= {}
+node_to_pod_count = collections.defaultdict(int)
+scheduler_to_algotimes = collections.defaultdict(int)
 
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
@@ -68,9 +71,11 @@ def setup(is_central, num_sch):
             # Pick a number from 1 - num_sch. This job will be scheduled by that scheduler.
             schedulername = "".join(["scheduler",str(randint(1,num_sch))])
             schedulertojob[schedulername] += num_tasks
+            job_to_scheduler[jobstr] = schedulername
             filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$SCHEDULER_NAME", schedulername).replace("$ESTRUNTIME", str(est_time))
         else:
             filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$ESTRUNTIME", str(est_time))
+            job_to_scheduler[jobstr] = "schedulera"
         filename = jobstr+".yaml"
         with open(filename, 'w') as file:
           file.write(filedata)
@@ -199,6 +204,7 @@ def process(compiled):
     for jobname,pods in job_to_podlist.items():
         # Fetch all pod related stats for each pod.
         pods_evaluated = 0
+        schedulername = job_to_scheduler[jobname]
         for podname in pods:
             #Two outputs for this pod
             queue_time = timedelta(microseconds=0)
@@ -248,8 +254,11 @@ def process(compiled):
                     nodename = log.split('node=')[1]
                     continue
             #print "Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename
+            node_to_pod_count[nodename] += 1
             qtimes.append(timeDiff(queue_time, default_time))
-            algotimes.append(timeDiff(scheduling_algorithm_time, default_time))
+            algotime = timeDiff(scheduling_algorithm_time, default_time)
+            algotimes.append(algotime)
+            scheduler_to_algotimes[schedulername] += algotime
             pods_evaluated += 1
             if pods_evaluated == job_to_numtasks[jobname]:
                 print "Job", jobname, "has JRT", job_response_time[jobname]
@@ -261,11 +270,15 @@ def post_process():
     qtimes.sort()
     algotimes.sort()
     jrt.sort()
+    node_to_pods = dict(sorted(node_to_pod_count.items(), key=lambda v:(v[1]))).values()
+    scheduler_algotimes = dict(sorted(scheduler_to_algotimes.items(), key=lambda v:(v[1]))).values()
     print "Total number of pods evaluated", len(qtimes)
     print "Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99)
     print "Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99)
     print "Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99)
     print "Schedulers and number of tasks they assigned", schedulertojob
+    print "Count of pods on nodes", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99)
+    print "Scheduler algorithm time per scheduler", percentile(scheduler_algotimes, 50), percentile(scheduler_algotimes, 90), percentile(scheduler_algotimes, 99)
 
 if __name__ == '__main__':
     main()
