@@ -108,7 +108,7 @@ class RedisWQ(object):
         other worker may have picked it up.  There is no indication
         of what happened.
         """
-        count = self._db.lrem(self._processing_q_key, -1, value)
+        count = self._db.lrem(self._processing_q_key, 1, value)
         # If we crash here, then the GC code will try to move the value, but it will
         # not be here, which is fine.  So this does not need to be a transaction.
         itemkey = self._itemkey(value)

@@ -12,13 +12,21 @@ spec:
       schedulerName: $SCHEDULER_NAME
       containers:
       - name: c
-        image: sv440/sv440:job-wq
+        image: sv440/sv440:job-wq-4
         env:
         - name: REDIS_SERVICE_HOST
-          value: "10.100.233.116"
+          value: "10.110.132.160"
         - name: JOBID
           value: "$JOBID"
+        - name: ESTRUNTIME
+          value: "$ESTRUNTIME"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PODNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
       imagePullSecrets:
       - name: regcred
-      restartPolicy: OnFailure
+      restartPolicy: Never
   backoffLimit: 100000

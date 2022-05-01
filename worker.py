@@ -7,32 +7,35 @@ import sys
 
 host = os.getenv("REDIS_SERVICE_HOST")
 jobid = os.getenv("JOBID")
+podname = os.getenv("PODNAME")
 
 q = rediswq.RedisWQ(name=jobid, host=host)
-print("Worker with sessionID: " +  q.sessionID())
-print("Initial queue state: empty=" + str(q.empty()))
+print(podname + ": Worker with sessionID: " +  q.sessionID())
+print(podname + ": Initial queue state: empty=" + str(q.empty()))
 done=False
 while not q.empty():
   #Lease this item till the value indicated on the item.
   item = q.lease()
   if item is not None:
     itemstr = item.decode("utf-8")
-    print("Working on " + itemstr)
+    print(podname + ": Working on " + itemstr)
     time.sleep(float(itemstr))
+    print(podname + ": Finished sleeping for " + itemstr)
     count = q.complete(item)
     if count == 0:
-      print("Work finished by some other pod!")
-      sys.exit("Work finished by some other pod!")
+      print(podname + ": Work finished by some other pod!")
+      sys.exit(podname + ": Work finished by some other pod!")
     done=True
     break
   else:
+    print(podname + ": Inside else. Queue state: empty=" + str(q.empty()))
     #See if any of the leases have expired, so they can be processed next.
     has_expired = q.get_expired()
     if has_expired == False:
-      print("Nothing to work on, and no expired leases!")
+      print(podname + ": Nothing to work on, and no expired leases!")
       sys.exit("Nothing to work on, and no expired leases!")
 if done:
-    print("Work completed by this task")
+    print(podname + ": Work completed by this task")
 else:
-    print("Queue empty, so no work done by this task.")
-    sys.exit("Queue empty, so no work done by this task.")
+    print(podname + ": Queue empty, so no work done by this task.")
+    sys.exit(podname + ": Queue empty, so no work done by this task.")

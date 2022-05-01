@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: $JOBID
+spec:
+  completions: $NUM_TASKS
+  parallelism: $NUM_TASKS
+  template:
+    metadata:
+      name: $JOBID
+    spec:
+      #schedulerName: schedulera
+      containers:
+      - name: c
+        image: sv440/sv440:job-wq-4
+        env:
+        - name: REDIS_SERVICE_HOST
+          value: "10.110.132.160"
+        - name: JOBID
+          value: "$JOBID"
+        - name: ESTRUNTIME
+          value: "$ESTRUNTIME"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PODNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      imagePullSecrets:
+      - name: regcred
+      restartPolicy: Never
+  backoffLimit: 100000
