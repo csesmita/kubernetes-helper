@@ -27,6 +27,10 @@ kubectl get pod scheduler1-xxx -n kube-system -o=jsonpath='{.spec.imagePullSecre
 
 kubectl apply -f redis-pod.yaml && kubectl apply -f redis-service.yaml
 
+// For debugging redis, use - 
+kubectl run -i --tty redis-image --image redis --command "/bin/sh"	
+kubectl attach redis-image -c redis-image -i -t
+
 
 //Change Redis IP in files - create script and in job.yaml. No docker image rebuilding required. 
 
