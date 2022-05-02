@@ -10,6 +10,7 @@ from numpy import percentile
 from random import randint
 import collections
 import sys
+from kubernetes import client, config, watch
 
 #TODO - Handle dup;licate values when inserting into redis.
 #Maintains job to pod list mapping for completed jobs.
@@ -152,45 +153,60 @@ def stats(num_jobs):
     #Look for 12:14:58.422793 pattern in logs
     pattern = '\d{2}:\d{2}:\d{2}\.\d{6}'
     compiled = re.compile(pattern)
+
+    # Watch for completed jobs.
+    config.load_kube_config()
+    job_client = client.BatchV1Api()
+    pod_client = client.CoreV1Api()
+    w = watch.Watch()
+
     while pending_jobs:
-        pending_jobs = add_pod_info()
+        pending_jobs = get_completed_jobs(w, job_client, pod_client)
         process(compiled)
-        sleep(5)
+        sleep(1)
     post_process()
 
-def add_pod_info():
-    if len(job_to_podlist.keys()) == 0:
+# For running this along with the job creation threads, split creation and watch on
+# two different machines.
+def get_completed_jobs(w, job_client, pod_client):
+    if len(job_to_numtasks.keys()) == 0:
+        w.stop()
+        print "No more jobs left to process"
         return False
-    for jobname in job_to_podlist.keys():
-        has_completed = subprocess.check_output(["kubectl", "get", "jobs", jobname, "-o","jsonpath='{.status.completionTime}'"])
-        try:
-            dt = datetime.strptime(has_completed, '\'%Y-%m-%dT%H:%M:%SZ\'')
-            completed_sec_from_epoch = (dt-datetime(1970,1,1)).total_seconds()
+    #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
+    for job_event in w.stream(func=job_client.list_namespaced_job, namespace='default'):
+        job_object = job_event['object']
+        jobname = job_object.metadata.name
+        if jobname not in job_to_numtasks.keys():
+            #This job has finished processing.
+            continue
+        status = job_object.status
+        if status.completion_time != None:
+            #Completion Time can be not None when Complete or Failed.
+            if status.conditions[0].type != "Complete":
+                #Job might have failed.
+                raise AssertionError("Job" + jobname + "has failed!")
+            # Process the completion time of the job to calculate its JRT.
+            print jobname,"has completed at time", status.completion_time
+            completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
             job_completion = completed_sec_from_epoch - job_start_time[jobname]
             if job_completion > job_response_time[jobname]:
                 job_response_time[jobname] = job_completion
-            #Check if the job has completed
-            is_complete = subprocess.check_output(["kubectl", "get", "jobs", jobname, "-o", "jsonpath='{.status.conditions}'"])
-            if "\"type\":\"Complete\"" not in is_complete:
-                #Job might have failed.
-                raise AssertionError("Job" + jobname + "has failed!")
-        except ValueError as e:
-            # This job has not yet completed.
-            #print jobname,"has not completed yet. Got error", e
-            continue
-        # This job has completed.
-        # TODO- Find the list of pods by querying the job.
-        pods_list = subprocess.check_output(['kubectl','get', 'pods', '--selector=job-name='+jobname, '--no-headers'])
-        for pod in pods_list.splitlines():
-            podstrs = pod.split()
-            podname = podstrs[0]
-            status = podstrs[2]
-            if status != "Completed":
-                print "Pod", podname, "is in ", status," state, but the job is complete. Skipping."
-                #Known error. This happens when etcd is slower than events in the cluster.
-                #However, the job has sucessfully completed. So, look for other pods.
-                continue
-            job_to_podlist[jobname].append(podname)
+            # Get all pods of the job.
+            pods = pod_client.list_namespaced_pod(namespace='default', label_selector='job-name={}'.format(jobname))
+            for pod in pods.items:
+                pod_status =  pod.status.phase
+                if pod_status != "Succeeded":
+                    #We are not interested in a pod that Failed.
+                    #There are definitely others since the job has completed.
+                    print pod.metadata.name,"has failed with status", pod_status,". Ignoring."
+                    continue
+                job_to_podlist[jobname].append(pod.metadata.name)
+            if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
+                raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pods)
+            del job_to_numtasks[jobname]
+            break
+
     return True
 
 def process(compiled):
@@ -203,9 +219,10 @@ def process(compiled):
     default_time = timedelta(microseconds=0)
     for jobname,pods in job_to_podlist.items():
         # Fetch all pod related stats for each pod.
-        pods_evaluated = 0
+        pods_evaluated = False
         schedulername = job_to_scheduler[jobname]
         for podname in pods:
+            pods_evaluated = True
             #Two outputs for this pod
             queue_time = timedelta(microseconds=0)
             scheduling_algorithm_time = timedelta(microseconds=0)
@@ -259,12 +276,12 @@ def process(compiled):
             algotime = timeDiff(scheduling_algorithm_time, default_time)
             algotimes.append(algotime)
             scheduler_to_algotimes[schedulername] += algotime
-            pods_evaluated += 1
-            if pods_evaluated == job_to_numtasks[jobname]:
-                print "Job", jobname, "has JRT", job_response_time[jobname]
-                jrt.append(job_response_time[jobname])
-                del job_to_podlist[jobname]
-                break
+        if pods_evaluated == True:
+            print "Job", jobname, "has JRT", job_response_time[jobname]
+            jrt.append(job_response_time[jobname])
+            del job_to_podlist[jobname]
+            # Delete job since all checks have passed.
+            subprocess.call(["kubectl", "delete", "jobs", jobname])
 
 def post_process():
     qtimes.sort()
