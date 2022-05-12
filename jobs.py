@@ -11,6 +11,7 @@ from random import randint
 import collections
 import sys
 from kubernetes import client, config, watch
+from kubernetes.client.rest import ApiException
 
 #TODO - Handle dup;licate values when inserting into redis.
 #Maintains job to pod list mapping for completed jobs.
@@ -93,8 +94,8 @@ def main():
     start_epoch = 0.0
     threads = []
 
-    if len(sys.argv) != 3:
-        print "Incorrect number of parameters"
+    if len(sys.argv) != 4:
+        print "Incorrect number of parameters. Usage: python jobs.py d 10 -e"
         sys.exit(1)
 
     is_central = sys.argv[1] == 'c'
@@ -167,42 +168,49 @@ def stats(num_jobs):
 # two different machines.
 def process_completed_jobs(w, job_client, pod_client, compiled):
     #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
-    for job_event in w.stream(func=job_client.list_namespaced_job, namespace='default'):
-        job_object = job_event['object']
-        jobname = job_object.metadata.name
-        if jobname not in job_to_numtasks.keys():
-            #This job has finished processing.
-            continue
-        status = job_object.status
-        if status.completion_time != None:
-            #Completion Time can be not None when Complete or Failed.
-            if status.conditions[0].type != "Complete":
-                #Job might have failed.
-                raise AssertionError("Job" + jobname + "has failed!")
-            # Process the completion time of the job to calculate its JRT.
-            print jobname,"has completed at time", status.completion_time
-            completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
-            job_completion = completed_sec_from_epoch - job_start_time[jobname]
-            if job_completion > job_response_time[jobname]:
-                job_response_time[jobname] = job_completion
-            # Get all pods of the job.
-            pods = pod_client.list_namespaced_pod(namespace='default', label_selector='job-name={}'.format(jobname))
-            for pod in pods.items:
-                pod_status =  pod.status.phase
-                if pod_status != "Succeeded":
-                    #We are not interested in a pod that Failed.
-                    #There are definitely others since the job has completed.
-                    print pod.metadata.name,"has failed with status", pod_status,". Ignoring."
-                    continue
-                job_to_podlist[jobname].append(pod.metadata.name)
-            if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
-                raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pods)
-            del job_to_numtasks[jobname]
-            process(compiled)
-        if len(job_to_numtasks.keys()) == 0:
-            w.stop()
-            print "No more jobs left to process"
-
+    try:
+        for job_event in w.stream(func=job_client.list_namespaced_job, namespace='default'):
+            job_object = job_event['object']
+            jobname = job_object.metadata.name
+            if jobname not in job_to_numtasks.keys():
+                #We have finished processing this job.
+                continue
+            status = job_object.status
+            if status.completion_time != None:
+                #Completion Time can be not None when Complete or Failed.
+                if status.conditions[0].type != "Complete":
+                    #Job might have failed.
+                    raise AssertionError("Job" + jobname + "has failed!")
+                # Process the completion time of the job to calculate its JRT.
+                print jobname,"has completed at time", status.completion_time
+                completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
+                job_completion = completed_sec_from_epoch - job_start_time[jobname]
+                if job_completion > job_response_time[jobname]:
+                    job_response_time[jobname] = job_completion
+                # Get all pods of the job.
+                pods = pod_client.list_namespaced_pod(namespace='default', label_selector='job-name={}'.format(jobname))
+                for pod in pods.items:
+                    pod_status =  pod.status.phase
+                    if pod_status != "Succeeded":
+                        #We are not interested in a pod that Failed.
+                        #There are definitely others since the job has completed.
+                        print pod.metadata.name,"has failed with status", pod_status,". Ignoring."
+                        continue
+                    job_to_podlist[jobname].append(pod.metadata.name)
+                if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
+                    pod_str = temp = ''.join([str(item) for item in job_to_podlist[jobname]])
+                    raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pod_str)
+                del job_to_numtasks[jobname]
+                process(compiled)
+            if len(job_to_numtasks.keys()) == 0:
+                w.stop()
+                print "No more jobs left to process"
+    except ApiException as e:
+        if e.status == 410: # Resource too old
+            print "Caught resource version exception and passing."
+            return process_completed_jobs(w, job_client, pod_client, compiled)
+        else:
+            raise
 
 def process(compiled):
     QUEUE_ADD_LOG    = "Add event for unscheduled pod"
