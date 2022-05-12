@@ -25,6 +25,11 @@ kubectl get pod scheduler1-xxx -n kube-system -o=jsonpath='{.spec.imagePullSecre
 
 
 
+// Disable API Server Rate limiting
+// Disable enable-priority-and-fairness flag in API server.
+
+
+
 kubectl apply -f redis-pod.yaml && kubectl apply -f redis-service.yaml
 
 // For debugging redis, use - 
