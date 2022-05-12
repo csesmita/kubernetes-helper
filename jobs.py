@@ -21,7 +21,6 @@ schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
 job_start_time = {}
-job_response_time = {}
 #Stats printed out.
 pods_discarded = 0
 jrt = []
@@ -144,7 +143,6 @@ def apply_job(filename, jobstr, start_epoch):
         subprocess.check_output(["kubectl","apply", "-f", filename])
         start_time = time()
         print("Starting", jobstr, "at", start_time - start_epoch)
-        job_response_time[jobstr] = 0
         job_start_time[jobstr] = start_time
 
 def stats(num_jobs):
@@ -185,8 +183,8 @@ def process_completed_jobs(w, job_client, pod_client, compiled):
                 print(jobname,"has completed at time", status.completion_time)
                 completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
                 job_completion = completed_sec_from_epoch - job_start_time[jobname]
-                if job_completion > job_response_time[jobname]:
-                    job_response_time[jobname] = job_completion
+                print("Job", jobname, "has JRT", job_completion)
+                jrt.append(job_completion)
                 # Get all pods of the job.
                 pods = pod_client.list_namespaced_pod(namespace='default', label_selector='job-name={}'.format(jobname))
                 for pod in pods.items:
@@ -290,8 +288,6 @@ def process(compiled):
             algotime = timeDiff(scheduling_algorithm_time, default_time)
             algotimes.append(algotime)
             scheduler_to_algotimes[schedulername] += algotime
-    print("Job", jobname, "has JRT", job_response_time[jobname])
-    jrt.append(job_response_time[jobname])
     del job_to_podlist[jobname]
     # Delete job since all checks have passed.
     subprocess.call(["kubectl", "delete", "jobs", jobname])
