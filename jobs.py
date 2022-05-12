@@ -47,9 +47,9 @@ def setup(is_central, num_sch):
     job_file = "job_d.yaml"
     if is_central:
         job_file = "job_c.yaml"
-        print "CENTRALIZED SCHEDULER"
+        print("CENTRALIZED SCHEDULER")
     else:
-        print "DECENTRALIZED SCHEDULER"
+        print("DECENTRALIZED SCHEDULER")
      
     with open(job_file, 'r') as file :
         job_tmpl = file.read()
@@ -95,7 +95,7 @@ def main():
     threads = []
 
     if len(sys.argv) != 4:
-        print "Incorrect number of parameters. Usage: python jobs.py d 10 -e"
+        print("Incorrect number of parameters. Usage: python jobs.py d 10 -e")
         sys.exit(1)
 
     is_central = sys.argv[1] == 'c'
@@ -118,8 +118,8 @@ def main():
         endTime = time()
         sleep_time = start_epoch + arrival_time - endTime
         if sleep_time < 0:
-            print "Script loop started at", startTime,"and ran for", endTime - startTime,"sec but sleep is -ve at", sleep_time
-            print "Next job due at", start_epoch + arrival_time, "but time now is", endTime
+            print("Script loop started at", startTime,"and ran for", endTime - startTime,"sec but sleep is -ve at", sleep_time)
+            print("Next job due at", start_epoch + arrival_time, "but time now is", endTime)
         else:    
             sleep(sleep_time)
         #"kubectl apply" is an expensive operation.
@@ -137,13 +137,13 @@ def main():
 
     #Process scheduler stats.    
     stats(jobid)
-    print "Script took a total of", time() - start_epoch,"s"
+    print("Script took a total of", time() - start_epoch,"s")
 
 def apply_job(filename, jobstr, start_epoch):
         #This command takes about 0.25s. So jobs can't arrive faster than this.
         subprocess.check_output(["kubectl","apply", "-f", filename])
         start_time = time()
-        print "Starting", jobstr, "at", start_time - start_epoch
+        print("Starting", jobstr, "at", start_time - start_epoch)
         job_response_time[jobstr] = 0
         job_start_time[jobstr] = start_time
 
@@ -182,7 +182,7 @@ def process_completed_jobs(w, job_client, pod_client, compiled):
                     #Job might have failed.
                     raise AssertionError("Job" + jobname + "has failed!")
                 # Process the completion time of the job to calculate its JRT.
-                print jobname,"has completed at time", status.completion_time
+                print(jobname,"has completed at time", status.completion_time)
                 completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
                 job_completion = completed_sec_from_epoch - job_start_time[jobname]
                 if job_completion > job_response_time[jobname]:
@@ -194,7 +194,7 @@ def process_completed_jobs(w, job_client, pod_client, compiled):
                     if pod_status != "Succeeded":
                         #We are not interested in a pod that Failed.
                         #There are definitely others since the job has completed.
-                        print pod.metadata.name,"has failed with status", pod_status,". Ignoring."
+                        print(pod.metadata.name,"has failed with status", pod_status,". Ignoring.")
                         continue
                     job_to_podlist[jobname].append(pod.metadata.name)
                 if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
@@ -204,10 +204,10 @@ def process_completed_jobs(w, job_client, pod_client, compiled):
                 process(compiled)
             if len(job_to_numtasks.keys()) == 0:
                 w.stop()
-                print "No more jobs left to process"
+                print("No more jobs left to process")
     except ApiException as e:
         if e.status == 410: # Resource too old
-            print "Caught resource version exception and passing."
+            print("Caught resource version exception and passing.")
             return process_completed_jobs(w, job_client, pod_client, compiled)
         else:
             raise
@@ -235,7 +235,7 @@ def process(compiled):
             unable_sch_time = datetime.min
             attempt_bind_time = datetime.min
             nodename=''
-            logs =  subprocess.check_output(['grep','-ri',podname, 'syslog']).split('\n')
+            logs =  subprocess.check_output(['grep','-ri',podname, 'syslog'], encoding='utf-8', text=True).split('\n')
             # TODO - Grep'ed logs can be out of order in time.
             # sch_queue_eject and unable_sch may happen multiple times.
             # However, this function assumes in order for caculation of scheduling and queue times.
@@ -249,12 +249,12 @@ def process(compiled):
                 #This log happens exactly once
                 if QUEUE_DELETE_LOG in log:
                     queue_eject_time = extractDateTime(compiled.search(log).group(0))
-                    #print "Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time
+                    #print("Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time)
                     queue_time = queue_eject_time - queue_add_time
                     break 
                 if START_SCH_LOG in log:
                     if start_sch_time > datetime.min:
-                        print "Check calculcations for pod for start sch time", podname
+                        print("Check calculcations for pod for start sch time", podname)
                         #Skip this pod's scheduling queue and algorithm time calculations.
                         pods_discarded += 1
                         break
@@ -263,7 +263,7 @@ def process(compiled):
                 if UNABLE_SCH_LOG in log:
                     if start_sch_time == datetime.min:
                         # This happens if some logs failed to make it to the distributed logging service.
-                        print "Check calculcations for pod for unschedulable pod time", podname
+                        print("Check calculcations for pod for unschedulable pod time", podname)
                         #Skip this pod's scheduling queue and algorithm time calculations.
                         pods_discarded += 1
                         break
@@ -275,7 +275,7 @@ def process(compiled):
                 if BIND_LOG in log:
                     if start_sch_time == datetime.min:
                         # This happens if some logs failed to make it to the distributed logging service.
-                        print "Check calculcations for pod for unschedulable pod time", podname
+                        print("Check calculcations for pod for unschedulable pod time", podname)
                         #Skip this pod's scheduling queue and algorithm time calculations.
                         pods_discarded += 1
                         break
@@ -284,33 +284,33 @@ def process(compiled):
                     start_sch_time = datetime.min
                     nodename = log.split('node=')[1]
                     continue
-            #print "Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename
+            #print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename)
             node_to_pod_count[nodename] += 1
             qtimes.append(timeDiff(queue_time, default_time))
             algotime = timeDiff(scheduling_algorithm_time, default_time)
             algotimes.append(algotime)
             scheduler_to_algotimes[schedulername] += algotime
-	print "Job", jobname, "has JRT", job_response_time[jobname]
-	jrt.append(job_response_time[jobname])
-	del job_to_podlist[jobname]
-	# Delete job since all checks have passed.
-	subprocess.call(["kubectl", "delete", "jobs", jobname])
+    print("Job", jobname, "has JRT", job_response_time[jobname])
+    jrt.append(job_response_time[jobname])
+    del job_to_podlist[jobname]
+    # Delete job since all checks have passed.
+    subprocess.call(["kubectl", "delete", "jobs", jobname])
 
 def post_process():
     qtimes.sort()
     algotimes.sort()
     jrt.sort()
-    node_to_pods = dict(sorted(node_to_pod_count.items(), key=lambda v:(v[1]))).values()
-    scheduler_algotimes = dict(sorted(scheduler_to_algotimes.items(), key=lambda v:(v[1]))).values()
-    print "Total number of pods evaluated", len(qtimes)
-    print "Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99)
-    print "Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99)
-    print "Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99)
-    print "Schedulers and number of tasks they assigned", schedulertojob
-    print "Count of pods on nodes", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99)
-    print "Scheduler algorithm time per scheduler", percentile(scheduler_algotimes, 50), percentile(scheduler_algotimes, 90), percentile(scheduler_algotimes, 99)
+    node_to_pods = list(dict(sorted(node_to_pod_count.items(), key=lambda item: item[1])).values())
+    scheduler_algotimes = list(dict(sorted(scheduler_to_algotimes.items(), key=lambda v:(v[1]))).values())
+    print("Total number of pods evaluated", len(qtimes))
+    print("Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99))
+    print("Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99))
+    print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
+    print("Schedulers and number of tasks they assigned", schedulertojob)
+    print("Count of pods on nodes", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99))
+    print("Scheduler algorithm time per scheduler", percentile(scheduler_algotimes, 50), percentile(scheduler_algotimes, 90), percentile(scheduler_algotimes, 99))
     percent_discarded = pods_discarded / (pods_discarded + len(scheduler_algotimes)) * 100
-    print "Pods discarded is", pods_discarded, "and that is", percent_discarded, "% of all pods"
+    print("Pods discarded is", pods_discarded, "and that is", percent_discarded, "% of all pods")
 
 if __name__ == '__main__':
     main()
