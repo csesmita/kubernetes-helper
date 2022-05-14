@@ -3,6 +3,7 @@ import rediswq
 import os
 import re
 import subprocess
+import asyncio
 from threading import Thread
 from datetime import timedelta, datetime
 from time import sleep, time, mktime
@@ -13,13 +14,19 @@ import sys
 from kubernetes import client, config, watch
 from kubernetes.client.rest import ApiException
 
-#TODO - Handle dup;licate values when inserting into redis.
-#Maintains job to pod list mapping for completed jobs.
+#TODO - Handle duplicate values when inserting into redis.
+#A list for both pods and jobs watch to keep track of.
+all_jobs = []
+#A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(list)
 SPEEDUP = 50
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
+#A list for jobs' watch to keep track of.
+all_jobs_jobwatch = []
+#A list for pods' watch to keep track of.
+all_jobs_podwatch = []
 job_start_time = {}
 #Stats printed out.
 pods_discarded = 0
@@ -85,6 +92,9 @@ def setup(is_central, num_sch):
         # Cleanup possible remnants of an older run
         q.delete(jobstr)
         q.rpush(actual_duration)
+        all_jobs.append(jobstr)
+        all_jobs_jobwatch.append(jobstr)
+        all_jobs_podwatch.append(jobstr)
     f.close()
 
 
@@ -110,7 +120,6 @@ def main():
         arrival_time = float(row[0])/float(SPEEDUP)
         jobid += 1
         jobstr = "job"+str(jobid)
-        #job_to_podlist[jobstr]=[]
         # Pick the correct job file.
         filename = jobstr+".yaml"
         #Sleep till it is time to start the job.
@@ -157,20 +166,29 @@ def stats(num_jobs):
     config.load_kube_config()
     job_client = client.BatchV1Api()
     pod_client = client.CoreV1Api()
-    w = watch.Watch()
 
-    process_completed_jobs(w, job_client, pod_client, compiled)
+    ioloop = asyncio.get_event_loop()
+    print("Starting gather loop")
+    ioloop.run_until_complete(gather_stats(pod_client, job_client, compiled))
+
     post_process()
+
+async def gather_stats(pod_client, job_client, compiled):
+    coroutines = [process_completed_pods(pod_client, compiled), process_completed_jobs(job_client)]
+    await asyncio.gather(*coroutines, return_exceptions=True)
 
 # For running this along with the job creation threads, split creation and watch on
 # two different machines.
-def process_completed_jobs(w, job_client, pod_client, compiled):
+async def process_completed_jobs(job_client):
+    w = watch.Watch()
+    print("Starting job watch loop")
     #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
+    #TODO - resourceVersion
     try:
         for job_event in w.stream(func=job_client.list_namespaced_job, namespace='default'):
             job_object = job_event['object']
             jobname = job_object.metadata.name
-            if jobname not in job_to_numtasks.keys():
+            if jobname not in all_jobs_jobwatch:
                 #We have finished processing this job.
                 continue
             status = job_object.status
@@ -180,37 +198,91 @@ def process_completed_jobs(w, job_client, pod_client, compiled):
                     #Job might have failed.
                     raise AssertionError("Job" + jobname + "has failed!")
                 # Process the completion time of the job to calculate its JRT.
-                print(jobname,"has completed at time", status.completion_time)
                 completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
                 job_completion = completed_sec_from_epoch - job_start_time[jobname]
                 print("Job", jobname, "has JRT", job_completion)
                 jrt.append(job_completion)
-                # Get all pods of the job.
-                pods = pod_client.list_namespaced_pod(namespace='default', label_selector='job-name={}'.format(jobname))
-                for pod in pods.items:
-                    pod_status =  pod.status.phase
-                    if pod_status != "Succeeded":
-                        #We are not interested in a pod that Failed.
-                        #There are definitely others since the job has completed.
-                        print(pod.metadata.name,"has failed with status", pod_status,". Ignoring.")
-                        continue
-                    job_to_podlist[jobname].append(pod.metadata.name)
-                if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
-                    pod_str = temp = ''.join([str(item) for item in job_to_podlist[jobname]])
-                    raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pod_str)
-                del job_to_numtasks[jobname]
-                process(compiled)
-            if len(job_to_numtasks.keys()) == 0:
+                all_jobs_jobwatch.remove(jobname)
+                if jobname not in all_jobs_podwatch:
+                    #Pods watch has also finished processing this job.
+                    all_jobs.remove(jobname)
+                    # Delete job since all checks have passed.
+                    subprocess.call(["kubectl", "delete", "jobs", jobname])
+            if len(all_jobs_jobwatch) == 0:
                 w.stop()
                 print("No more jobs left to process")
+                return
+            #print("Jobs watch yields")
+            await asyncio.sleep(0)
     except ApiException as e:
         if e.status == 410: # Resource too old
             print("Caught resource version exception and passing.")
-            return process_completed_jobs(w, job_client, pod_client, compiled)
+            w.stop()
+            return process_completed_jobs(job_client)
         else:
             raise
 
-def process(compiled):
+async def process_completed_pods(pod_client, compiled):
+    w = watch.Watch()
+    print("Starting pod watch loop with all_jobs_podwatch", all_jobs_podwatch)
+    try:
+        for pod_event in w.stream(func=pod_client.list_namespaced_pod, namespace='default'):
+            pod = pod_event['object']
+            if 'job-name' not in pod.metadata.labels:
+                continue
+            jobname = pod.metadata.labels['job-name']
+            if jobname not in all_jobs_podwatch:
+                continue
+            pod_status =  pod.status.phase
+            if pod_status != "Succeeded":
+                #We are not interested in a pod that Failed.
+                #There are definitely others since the job will (has) complete(d).
+                #print("------",pod.metadata.name,"has failed with status", pod_status,". Ignoring.-----")
+                continue
+            job_to_podlist[jobname].append(pod.metadata.name)
+            is_return = cleanup(compiled)
+            if is_return:
+                w.stop()
+                print("Pods watch returning")
+                return
+            #print("Pods watch yields")
+            await asyncio.sleep(0)
+    except ApiException as e:
+        if e.status == 410: # Resource too old
+            print("Caught resource version exception and passing.")
+            w.stop()
+            return process_completed_pods(job_client)
+        else:
+            raise
+
+
+def cleanup(compiled):
+    jobs = []
+    for jobname in job_to_podlist.keys():
+        #print("Trying pods of", jobname, " - ",len(job_to_podlist[jobname]),":",job_to_numtasks[jobname])
+        if len(job_to_podlist[jobname]) < job_to_numtasks[jobname]:
+            continue
+        if len(job_to_podlist[jobname]) > job_to_numtasks[jobname]:
+            pod_str = temp = ''.join([str(item) for item in job_to_podlist[jobname]])
+            raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pod_str)
+        #len(job_to_podlist[jobname]) == job_to_numtasks[jobname]:
+        process(compiled, jobname)
+        jobs.append(jobname)
+    #print("List of pod completed jobs", jobs)
+    for jobname in jobs:
+        all_jobs_podwatch.remove(jobname)
+        del job_to_podlist[jobname]
+        if jobname not in all_jobs_jobwatch:
+            #Jobs watch has also finished processing this job.
+            all_jobs.remove(jobname)
+            # Delete job since all checks have passed.
+            subprocess.call(["kubectl", "delete", "jobs", jobname])
+    if len(all_jobs_podwatch) == 0:
+        #print("Request to terminate pod loop")
+        return True
+    return False
+
+def process(compiled, jobname):
     QUEUE_ADD_LOG    = "Add event for unscheduled pod"
     QUEUE_DELETE_LOG = "Delete event for unscheduled pod"
     START_SCH_LOG    = "About to try and schedule pod"
@@ -219,78 +291,75 @@ def process(compiled):
 
     default_time = timedelta(microseconds=0)
     # job_to_podlist only contains completed jobs.
-    for jobname,pods in job_to_podlist.items():
-        # Fetch all pod related stats for each pod.
-        schedulername = job_to_scheduler[jobname]
-        for podname in pods:
-            #Two outputs for this pod
-            queue_time = timedelta(microseconds=0)
-            scheduling_algorithm_time = timedelta(microseconds=0)
-            #Interim points
-            queue_add_time = datetime.min
-            queue_eject_time = datetime.min
-            start_sch_time = datetime.min
-            unable_sch_time = datetime.min
-            attempt_bind_time = datetime.min
-            nodename=''
-            logs =  subprocess.check_output(['grep','-ri',podname, 'syslog'], encoding='utf-8', text=True).split('\n')
-            # TODO - Grep'ed logs can be out of order in time.
-            # sch_queue_eject and unable_sch may happen multiple times.
-            # However, this function assumes in order for caculation of scheduling and queue times.
-            for log in logs:
-                #This log happens exactly once
-                if QUEUE_ADD_LOG in log:
-                    if queue_add_time > datetime.min:
-                        raise AssertionError("Check calculcations for pod for queue add time"+ podname)
-                    queue_add_time = extractDateTime(compiled.search(log).group(0))
-                    continue
-                #This log happens exactly once
-                if QUEUE_DELETE_LOG in log:
-                    queue_eject_time = extractDateTime(compiled.search(log).group(0))
-                    #print("Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time)
-                    queue_time = queue_eject_time - queue_add_time
-                    break 
-                if START_SCH_LOG in log:
-                    if start_sch_time > datetime.min:
-                        print("Check calculcations for pod for start sch time", podname)
-                        #Skip this pod's scheduling queue and algorithm time calculations.
-                        pods_discarded += 1
-                        break
-                    start_sch_time = extractDateTime(compiled.search(log).group(0))
-                    continue
-                if UNABLE_SCH_LOG in log:
-                    if start_sch_time == datetime.min:
-                        # This happens if some logs failed to make it to the distributed logging service.
-                        print("Check calculcations for pod for unschedulable pod time", podname)
-                        #Skip this pod's scheduling queue and algorithm time calculations.
-                        pods_discarded += 1
-                        break
-                    unable_sch_time = extractDateTime(compiled.search(log).group(0))
-                    scheduling_algorithm_time = scheduling_algorithm_time + unable_sch_time - start_sch_time
-                    start_sch_time = datetime.min
-                    continue
-                #This log happens exactly once
-                if BIND_LOG in log:
-                    if start_sch_time == datetime.min:
-                        # This happens if some logs failed to make it to the distributed logging service.
-                        print("Check calculcations for pod for unschedulable pod time", podname)
-                        #Skip this pod's scheduling queue and algorithm time calculations.
-                        pods_discarded += 1
-                        break
-                    attempt_bind_time = extractDateTime(compiled.search(log).group(0))
-                    scheduling_algorithm_time = scheduling_algorithm_time + attempt_bind_time - start_sch_time
-                    start_sch_time = datetime.min
-                    nodename = log.split('node=')[1]
-                    continue
-            #print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename)
-            node_to_pod_count[nodename] += 1
-            qtimes.append(timeDiff(queue_time, default_time))
-            algotime = timeDiff(scheduling_algorithm_time, default_time)
-            algotimes.append(algotime)
-            scheduler_to_algotimes[schedulername] += algotime
-    del job_to_podlist[jobname]
-    # Delete job since all checks have passed.
-    subprocess.call(["kubectl", "delete", "jobs", jobname])
+    pods = job_to_podlist[jobname]
+    # Fetch all pod related stats for each pod.
+    schedulername = job_to_scheduler[jobname]
+    for podname in pods:
+        #Two outputs for this pod
+        queue_time = timedelta(microseconds=0)
+        scheduling_algorithm_time = timedelta(microseconds=0)
+        #Interim points
+        queue_add_time = datetime.min
+        queue_eject_time = datetime.min
+        start_sch_time = datetime.min
+        unable_sch_time = datetime.min
+        attempt_bind_time = datetime.min
+        nodename=''
+        logs =  subprocess.check_output(['grep','-ri',podname, 'syslog'], encoding='utf-8', text=True).split('\n')
+        # TODO - Grep'ed logs can be out of order in time.
+        # sch_queue_eject and unable_sch may happen multiple times.
+        # However, this function assumes in order for caculation of scheduling and queue times.
+        for log in logs:
+            #This log happens exactly once
+            if QUEUE_ADD_LOG in log:
+                if queue_add_time > datetime.min:
+                    raise AssertionError("--------Check calculcations for pod for queue add time"+ podname)
+                queue_add_time = extractDateTime(compiled.search(log).group(0))
+                continue
+            #This log happens exactly once
+            if QUEUE_DELETE_LOG in log:
+                queue_eject_time = extractDateTime(compiled.search(log).group(0))
+                #print("Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time)
+                queue_time = queue_eject_time - queue_add_time
+                break
+            if START_SCH_LOG in log:
+                if start_sch_time > datetime.min:
+                    print("--------Check calculcations for pod for start sch time", podname)
+                    #Skip this pod's scheduling queue and algorithm time calculations.
+                    pods_discarded += 1
+                    break
+                start_sch_time = extractDateTime(compiled.search(log).group(0))
+                continue
+            if UNABLE_SCH_LOG in log:
+                if start_sch_time == datetime.min:
+                    # This happens if some logs failed to make it to the distributed logging service.
+                    print("--------Check calculcations for pod for unschedulable pod time", podname)
+                    #Skip this pod's scheduling queue and algorithm time calculations.
+                    pods_discarded += 1
+                    break
+                unable_sch_time = extractDateTime(compiled.search(log).group(0))
+                scheduling_algorithm_time = scheduling_algorithm_time + unable_sch_time - start_sch_time
+                start_sch_time = datetime.min
+                continue
+            #This log happens exactly once
+            if BIND_LOG in log:
+                if start_sch_time == datetime.min:
+                    # This happens if some logs failed to make it to the distributed logging service.
+                    print("Check calculcations for pod for unschedulable pod time", podname)
+                    #Skip this pod's scheduling queue and algorithm time calculations.
+                    pods_discarded += 1
+                    break
+                attempt_bind_time = extractDateTime(compiled.search(log).group(0))
+                scheduling_algorithm_time = scheduling_algorithm_time + attempt_bind_time - start_sch_time
+                start_sch_time = datetime.min
+                nodename = log.split('node=')[1]
+                continue
+        #print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename)
+        node_to_pod_count[nodename] += 1
+        qtimes.append(timeDiff(queue_time, default_time))
+        algotime = timeDiff(scheduling_algorithm_time, default_time)
+        algotimes.append(algotime)
+        scheduler_to_algotimes[schedulername] += algotime
 
 def post_process():
     qtimes.sort()
