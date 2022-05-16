@@ -16,17 +16,17 @@ from kubernetes.client.rest import ApiException
 
 #TODO - Handle duplicate values when inserting into redis.
 #A list for both pods and jobs watch to keep track of.
-all_jobs = []
+all_jobs = set()
 #A dict for pods' watch to keep track of.
-job_to_podlist = collections.defaultdict(list)
+job_to_podlist = collections.defaultdict(set)
 SPEEDUP = 200
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
 #A list for jobs' watch to keep track of.
-all_jobs_jobwatch = []
+all_jobs_jobwatch = set()
 #A list for pods' watch to keep track of.
-all_jobs_podwatch = []
+all_jobs_podwatch = set()
 job_start_time = {}
 #Stats printed out.
 pods_discarded = 0
@@ -92,9 +92,9 @@ def setup(is_central, num_sch):
         # Cleanup possible remnants of an older run
         q.delete(jobstr)
         q.rpush(actual_duration)
-        all_jobs.append(jobstr)
-        all_jobs_jobwatch.append(jobstr)
-        all_jobs_podwatch.append(jobstr)
+        all_jobs.add(jobstr)
+        all_jobs_jobwatch.add(jobstr)
+        all_jobs_podwatch.add(jobstr)
     f.close()
 
 
@@ -168,7 +168,6 @@ def stats(num_jobs):
     pod_client = client.CoreV1Api()
 
     ioloop = asyncio.get_event_loop()
-    print("Starting gather loop")
     ioloop.run_until_complete(gather_stats(pod_client, job_client))
 
     process(compiled)
@@ -184,22 +183,23 @@ def process_job_object(job_object):
         #We have finished processing this job.
         return False
     status = job_object.status
-    if status.completion_time != None:
-        #Completion Time can be not None when Complete or Failed.
-        if status.conditions[0].type != "Complete":
-            #Job might have failed.
-            raise AssertionError("Job" + jobname + "has failed!")
-        # Process the completion time of the job to calculate its JRT.
-        completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
-        job_completion = completed_sec_from_epoch - job_start_time[jobname]
-        print("Job", jobname, "has JRT", job_completion)
-        jrt.append(job_completion)
-        all_jobs_jobwatch.remove(jobname)
-        if jobname not in all_jobs_podwatch:
-            #Pods watch has also finished processing this job.
-            all_jobs.remove(jobname)
-            # Delete job since all checks have passed.
-            subprocess.call(["kubectl", "delete", "jobs", jobname])
+    if status.completion_time == None:
+        return False
+    #Completion Time is set, so job is Complete or Failed.
+    if status.conditions[0].type != "Complete":
+        #Job might have failed.
+        raise AssertionError("Job" + jobname + "has failed!")
+    # Process the completion time of the job to calculate its JRT.
+    completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
+    job_completion = completed_sec_from_epoch - job_start_time[jobname]
+    print("Job", jobname, "has JRT", job_completion)
+    jrt.append(job_completion)
+    all_jobs_jobwatch.remove(jobname)
+    if jobname not in all_jobs_podwatch:
+        #Pods watch has also finished processing this job.
+        all_jobs.remove(jobname)
+        # Delete job since all checks have passed.
+        subprocess.call(["kubectl", "delete", "jobs", jobname])
     if len(all_jobs_jobwatch) == 0:
         return True
     return False
@@ -207,43 +207,36 @@ def process_job_object(job_object):
 # For running this along with the job creation threads, split creation and watch on
 # two different machines.
 async def process_completed_jobs(job_client):
-    w = watch.Watch()
-    print("Starting job watch loop")
-    last_resource_version = 0
-    #Initialize the value of resource version
-    for job_event in w.stream(func=job_client.list_namespaced_job, namespace='default'):
-        job_object = job_event['object']
-        last_resource_version = job_object.metadata.resource_version
-        is_return = process_job_object(job_object)
-        if is_return:
-            w.stop()
-            print("No more jobs left to process")
-            return
-        #Just run this loop once to get the resource version.
-        break
-
+    print("Starting job processing loop")
     #Run the main job loop with the resource version.
     #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
-    try:
-        for job_event in w.stream(func=job_client.list_namespaced_job, namespace='default', resource_version=last_resource_version):
-            job_object = job_event['object']
-            last_resource_version = job_object.metadata.resource_version
-            is_return = process_job_object(job_object)
-            if is_return:
-                w.stop()
-                print("No more jobs left to process")
-                return
-            print("Jobs watch yields")
+    limit = 5
+    job_events = job_client.list_namespaced_job(namespace='default', limit=limit)
+    while True:
+        try:
+            continue_param = job_events.metadata._continue
+            last_resource_version = job_events.metadata.resource_version
+            for job_object in job_events.items:
+                is_return = process_job_object(job_object)
+                if is_return:
+                    w.stop()
+                    print("No more jobs left to process")
+                    return
+            #print("Jobs watch yields")
             await asyncio.sleep(0)
-    except ApiException as e:
-        # TODO - What if there are missed events between now and new resource version?
-        # Handle by actively querying for them.
-        if e.status == 410: # Resource too old
-            print("JOB WATCH - Caught resource version exception and passing.")
-            w.stop()
-            await process_completed_jobs(job_client)
-        else:
-            raise
+            if continue_param != None:
+                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param)
+            else:
+                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan')
+        except ApiException as e:
+            print("Exception", e)
+            # TODO - What if there are missed events between now and new resource version?
+            # Handle by actively querying for them.
+            if e.status == 410: # Resource too old
+                print("JOB WATCH - Caught resource version exception and passing.")
+                return process_completed_jobs(job_client)
+            else:
+                raise
 
 def process_pod_object(pod):
     if 'job-name' not in pod.metadata.labels:
@@ -252,60 +245,58 @@ def process_pod_object(pod):
     if jobname not in all_jobs_podwatch:
         return False
     pod_status =  pod.status.phase
-    job_to_podlist[jobname].append(pod.metadata.name)
+    job_to_podlist[jobname].add(pod.metadata.name)
     is_return = cleanup()
     return is_return
 
 #TODO - Reduce processing done in this func.
 async def process_completed_pods(pod_client):
-    w = watch.Watch()
-    print("Starting pod watch loop")
-    last_resource_version = 0
-    for pod_event in w.stream(func=pod_client.list_namespaced_pod, namespace='default'):
-        pod = pod_event['object']
-        last_resource_version = pod.metadata.resource_version
-        is_return = process_pod_object(pod)
-        if is_return:
-            w.stop()
-            print("Pods watch returning")
-            return
-        break
-
-    try:
-        #We are not interested in a pod that Failed.
-        #There are definitely others since the job will (has) complete(d).
-        for pod_event in w.stream(func=pod_client.list_namespaced_pod, namespace='default', resource_version=last_resource_version, field_selector='status.phase=Succeeded'):
-            pod = pod_event['object']
-            last_resource_version = pod.metadata.resource_version
-            is_return = process_pod_object(pod)
-            if is_return:
-                w.stop()
-                print("Pods watch returning")
-                return
-            print("Pods watch yields")
+    print("Starting pod events' loop")
+    #We are not interested in a pod that Failed.
+    #There are definitely others since the job will (has) complete(d).
+    limit=50
+    pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, field_selector='status.phase=Succeeded')
+    while True:
+        try:
+            continue_param = pod_events.metadata._continue
+            last_resource_version = pod_events.metadata.resource_version
+            #print("Got continue param", continue_param, "and last_resource_version", last_resource_version)
+            for pod in pod_events.items:
+                is_return = process_pod_object(pod)
+                if is_return:
+                    w.stop()
+                    print("Pods watch returning")
+                    return
+            #print("Pods watch yields")
             await asyncio.sleep(0)
-    except ApiException as e:
-        # TODO - What if there are missed events between now and new resource version?
-        # Handle by actively querying for them.
-        if e.status == 410: # Resource too old
-            print("POD WATCH - Caught resource version exception and passing.")
-            w.stop()
-            await process_completed_pods(pod_client)
-        else:
-            raise
+            if continue_param != None:
+                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded')
+            else:
+                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan',field_selector='status.phase=Succeeded')
+            #pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded')
+            #print("Got new set of events", len(pod_events.items))
+        except ApiException as e:
+            # TODO - What if there are missed events between now and new resource version?
+            # Handle by actively querying for them.
+            print("Exception",e)
+            if e.status == 410: # Resource too old
+                print("POD WATCH - Caught resource version exception and passing.")
+                return process_completed_pods(pod_client)
+            else:
+                raise
 
 def cleanup():
     jobs = []
     for jobname in job_to_podlist.keys():
         if jobname not in all_jobs_podwatch:
             continue
-        #print("Trying pods of", jobname, " - ",len(job_to_podlist[jobname]),":",job_to_numtasks[jobname])
         if len(job_to_podlist[jobname]) < job_to_numtasks[jobname]:
             continue
         if len(job_to_podlist[jobname]) > job_to_numtasks[jobname]:
             pod_str = temp = ''.join([str(item) for item in job_to_podlist[jobname]])
             raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pod_str)
         #len(job_to_podlist[jobname]) == job_to_numtasks[jobname]:
+        #print("Trying pods of", jobname, " - ",len(job_to_podlist[jobname]),":",job_to_numtasks[jobname])
         jobs.append(jobname)
     for jobname in jobs:
         all_jobs_podwatch.remove(jobname)
