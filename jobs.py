@@ -16,7 +16,6 @@ from kubernetes.client.rest import ApiException
 
 #TODO - Handle duplicate values when inserting into redis.
 #A list for both pods and jobs watch to keep track of.
-all_jobs = set()
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
 SPEEDUP = 200
@@ -92,7 +91,6 @@ def setup(is_central, num_sch):
         # Cleanup possible remnants of an older run
         q.delete(jobstr)
         q.rpush(actual_duration)
-        all_jobs.add(jobstr)
         all_jobs_jobwatch.add(jobstr)
         all_jobs_podwatch.add(jobstr)
     f.close()
@@ -174,10 +172,10 @@ def stats(num_jobs):
     post_process()
 
 async def gather_stats(pod_client, job_client):
-    coroutines = [process_completed_pods(pod_client), process_completed_jobs(job_client)]
+    coroutines = [process_completed_pods(pod_client, job_client), process_completed_jobs(job_client)]
     await asyncio.gather(*coroutines, return_exceptions=True)
 
-def process_job_object(job_object):
+def process_job_object(job_object, job_client):
     jobname = job_object.metadata.name
     if jobname not in all_jobs_jobwatch:
         #We have finished processing this job.
@@ -197,9 +195,12 @@ def process_job_object(job_object):
     all_jobs_jobwatch.remove(jobname)
     if jobname not in all_jobs_podwatch:
         #Pods watch has also finished processing this job.
-        all_jobs.remove(jobname)
         # Delete job since all checks have passed.
-        subprocess.call(["kubectl", "delete", "jobs", jobname])
+        job_client.delete_namespaced_job(name=jobname, namespace="default",
+            body=client.V1DeleteOptions(
+                grace_period_seconds=0,
+                propagation_policy='Background'))
+        #subprocess.call(["kubectl", "delete", "jobs", jobname])
     if len(all_jobs_jobwatch) == 0:
         return True
     return False
@@ -217,7 +218,7 @@ async def process_completed_jobs(job_client):
             continue_param = job_events.metadata._continue
             last_resource_version = job_events.metadata.resource_version
             for job_object in job_events.items:
-                is_return = process_job_object(job_object)
+                is_return = process_job_object(job_object, job_client)
                 if is_return:
                     w.stop()
                     print("No more jobs left to process")
@@ -238,7 +239,7 @@ async def process_completed_jobs(job_client):
             else:
                 raise
 
-def process_pod_object(pod):
+def process_pod_object(pod, job_client):
     if 'job-name' not in pod.metadata.labels:
         return False
     jobname = pod.metadata.labels['job-name']
@@ -246,11 +247,11 @@ def process_pod_object(pod):
         return False
     pod_status =  pod.status.phase
     job_to_podlist[jobname].add(pod.metadata.name)
-    is_return = cleanup()
+    is_return = cleanup(job_client)
     return is_return
 
 #TODO - Reduce processing done in this func.
-async def process_completed_pods(pod_client):
+async def process_completed_pods(pod_client, job_client):
     print("Starting pod events' loop")
     #We are not interested in a pod that Failed.
     #There are definitely others since the job will (has) complete(d).
@@ -262,7 +263,7 @@ async def process_completed_pods(pod_client):
             last_resource_version = pod_events.metadata.resource_version
             #print("Got continue param", continue_param, "and last_resource_version", last_resource_version)
             for pod in pod_events.items:
-                is_return = process_pod_object(pod)
+                is_return = process_pod_object(pod, job_client)
                 if is_return:
                     w.stop()
                     print("Pods watch returning")
@@ -281,11 +282,11 @@ async def process_completed_pods(pod_client):
             print("Exception",e)
             if e.status == 410: # Resource too old
                 print("POD WATCH - Caught resource version exception and passing.")
-                return process_completed_pods(pod_client)
+                return process_completed_pods(pod_client, job_client)
             else:
                 raise
 
-def cleanup():
+def cleanup(job_client):
     jobs = []
     for jobname in job_to_podlist.keys():
         if jobname not in all_jobs_podwatch:
@@ -302,9 +303,12 @@ def cleanup():
         all_jobs_podwatch.remove(jobname)
         if jobname not in all_jobs_jobwatch:
             #Jobs watch has also finished processing this job.
-            all_jobs.remove(jobname)
             # Delete job since all checks have passed.
-            subprocess.call(["kubectl", "delete", "jobs", jobname])
+            job_client.delete_namespaced_job(name=jobname, namespace="default",
+                body=client.V1DeleteOptions(
+                    grace_period_seconds=0,
+                    propagation_policy='Background'))
+            #subprocess.call(["kubectl", "delete", "jobs", jobname])
     if len(all_jobs_podwatch) == 0:
         print("Request to terminate pod loop")
         return True
