@@ -4,14 +4,13 @@ import os
 import re
 import subprocess
 import asyncio
-from threading import Thread
 from datetime import timedelta, datetime
 from time import sleep, time, mktime
 from numpy import percentile
 from random import randint
 import collections
 import sys
-from kubernetes import client, config, watch
+from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
 
 #TODO - Handle duplicate values when inserting into redis.
@@ -39,6 +38,9 @@ pod_durations = {}
 pod_qdiff= {}
 node_to_pod_count = collections.defaultdict(int)
 scheduler_to_algotimes = collections.defaultdict(int)
+
+config.load_kube_config()
+k8s_client = client.ApiClient()
 
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
@@ -128,29 +130,15 @@ def main():
             print("Next job due at", start_epoch + arrival_time, "but time now is", endTime)
         else:    
             sleep(sleep_time)
-        #"kubectl apply" is an expensive operation.
-        #Spawn a background thread that will actually start the job.
-        #apply_job(filename, jobstr, start_epoch)
-        thr = Thread(target=apply_job, args=(filename, jobstr, start_epoch), kwargs={})
-        thr.start()
-        threads.append(thr)
+        job_start_time[jobstr] = time()
+        utils.create_from_yaml(k8s_client, filename)
+        print("Starting", jobstr, "at", job_start_time[jobstr] - start_epoch)
 
     f.close()
-
-    #Wait for all threads to start their respective jobs.
-    for thr in threads:
-        thr.join()
 
     #Process scheduler stats.    
     stats(jobid)
     print("Script took a total of", time() - start_epoch,"s")
-
-def apply_job(filename, jobstr, start_epoch):
-        #This command takes about 0.25s. So jobs can't arrive faster than this.
-        subprocess.check_output(["kubectl","apply", "-f", filename])
-        start_time = time()
-        print("Starting", jobstr, "at", start_time - start_epoch)
-        job_start_time[jobstr] = start_time
 
 def stats(num_jobs):
     pending_jobs = True
@@ -161,7 +149,6 @@ def stats(num_jobs):
     compiled = re.compile(pattern)
 
     # Watch for completed jobs.
-    config.load_kube_config()
     job_client = client.BatchV1Api()
     pod_client = client.CoreV1Api()
 
@@ -200,7 +187,6 @@ def process_job_object(job_object, job_client):
             body=client.V1DeleteOptions(
                 grace_period_seconds=0,
                 propagation_policy='Background'))
-        #subprocess.call(["kubectl", "delete", "jobs", jobname])
     if len(all_jobs_jobwatch) == 0:
         return True
     return False
@@ -220,7 +206,6 @@ async def process_completed_jobs(job_client):
             for job_object in job_events.items:
                 is_return = process_job_object(job_object, job_client)
                 if is_return:
-                    w.stop()
                     print("No more jobs left to process")
                     return
             #print("Jobs watch yields")
@@ -265,7 +250,6 @@ async def process_completed_pods(pod_client, job_client):
             for pod in pod_events.items:
                 is_return = process_pod_object(pod, job_client)
                 if is_return:
-                    w.stop()
                     print("Pods watch returning")
                     return
             #print("Pods watch yields")
@@ -308,7 +292,6 @@ def cleanup(job_client):
                 body=client.V1DeleteOptions(
                     grace_period_seconds=0,
                     propagation_policy='Background'))
-            #subprocess.call(["kubectl", "delete", "jobs", jobname])
     if len(all_jobs_podwatch) == 0:
         print("Request to terminate pod loop")
         return True
