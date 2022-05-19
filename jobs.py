@@ -125,10 +125,7 @@ def main():
         #Sleep till it is time to start the job.
         endTime = time()
         sleep_time = start_epoch + arrival_time - endTime
-        if sleep_time < 0:
-            print("Script loop started at", startTime,"and ran for", endTime - startTime,"sec but sleep is -ve at", sleep_time)
-            print("Next job due at", start_epoch + arrival_time, "but time now is", endTime)
-        else:    
+        if sleep_time > 0:
             sleep(sleep_time)
         job_start_time[jobstr] = time()
         utils.create_from_yaml(k8s_client, filename)
@@ -191,29 +188,34 @@ def process_job_object(job_object, job_client):
         return True
     return False
 
+async def get_job_events(job_client, limit, continue_param, timeout_seconds, last_resource_version):
+    if continue_param != None:
+        return job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param, timeout_seconds=timeout_seconds)
+    return job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan', timeout_seconds=timeout_seconds)
+
+
 # For running this along with the job creation threads, split creation and watch on
 # two different machines.
 async def process_completed_jobs(job_client):
     print("Starting job processing loop")
     #Run the main job loop with the resource version.
     #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
-    limit = 5
+    limit = 10
+    timeout_seconds = 5
     job_events = job_client.list_namespaced_job(namespace='default', limit=limit)
     while True:
         try:
-            continue_param = job_events.metadata._continue
-            last_resource_version = job_events.metadata.resource_version
-            for job_object in job_events.items:
-                is_return = process_job_object(job_object, job_client)
-                if is_return:
-                    print("No more jobs left to process")
-                    return
+            if job_events != None:
+                continue_param = job_events.metadata._continue
+                last_resource_version = job_events.metadata.resource_version
+                for job_object in job_events.items:
+                    is_return = process_job_object(job_object, job_client)
+                    if is_return:
+                        print("No more jobs left to process")
+                        return
             #print("Jobs watch yields")
             await asyncio.sleep(0)
-            if continue_param != None:
-                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param)
-            else:
-                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan')
+            job_events = await get_job_events(job_client,limit, continue_param, timeout_seconds, last_resource_version)
         except ApiException as e:
             print("Exception", e)
             # TODO - What if there are missed events between now and new resource version?
@@ -241,25 +243,21 @@ async def process_completed_pods(pod_client, job_client):
     #We are not interested in a pod that Failed.
     #There are definitely others since the job will (has) complete(d).
     limit=50
+    timeout_seconds = 5
     pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, field_selector='status.phase=Succeeded')
     while True:
         try:
-            continue_param = pod_events.metadata._continue
-            last_resource_version = pod_events.metadata.resource_version
-            #print("Got continue param", continue_param, "and last_resource_version", last_resource_version)
-            for pod in pod_events.items:
-                is_return = process_pod_object(pod, job_client)
-                if is_return:
-                    print("Pods watch returning")
-                    return
+            if pod_events != None:
+                continue_param = pod_events.metadata._continue
+                last_resource_version = pod_events.metadata.resource_version
+                for pod in pod_events.items:
+                    is_return = process_pod_object(pod, job_client)
+                    if is_return:
+                        print("Pods watch returning")
+                        return
             #print("Pods watch yields")
             await asyncio.sleep(0)
-            if continue_param != None:
-                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded')
-            else:
-                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan',field_selector='status.phase=Succeeded')
-            #pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded')
-            #print("Got new set of events", len(pod_events.items))
+            pod_events = await get_pod_events(pod_client,limit, continue_param, timeout_seconds, last_resource_version)
         except ApiException as e:
             # TODO - What if there are missed events between now and new resource version?
             # Handle by actively querying for them.
@@ -269,6 +267,11 @@ async def process_completed_pods(pod_client, job_client):
                 return process_completed_pods(pod_client, job_client)
             else:
                 raise
+
+async def get_pod_events(pod_client, limit, continue_param, timeout_seconds, last_resource_version):
+    if continue_param != None:
+        return pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded', timeout_seconds=timeout_seconds)
+    return pod_client.list_namespaced_pod(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan',field_selector='status.phase=Succeeded', timeout_seconds=timeout_seconds)
 
 def cleanup(job_client):
     jobs = []
