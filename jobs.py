@@ -197,23 +197,25 @@ async def process_completed_jobs(job_client):
     print("Starting job processing loop")
     #Run the main job loop with the resource version.
     #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
-    limit = 5
+    limit = 10
+    timeout = 5
     job_events = job_client.list_namespaced_job(namespace='default', limit=limit)
     while True:
         try:
-            continue_param = job_events.metadata._continue
-            last_resource_version = job_events.metadata.resource_version
-            for job_object in job_events.items:
-                is_return = process_job_object(job_object, job_client)
-                if is_return:
-                    print("No more jobs left to process")
-                    return
+            if len(job_events) > 0:
+                continue_param = job_events.metadata._continue
+                last_resource_version = job_events.metadata.resource_version
+                for job_object in job_events.items:
+                    is_return = process_job_object(job_object, job_client)
+                    if is_return:
+                        print("No more jobs left to process")
+                        return
             #print("Jobs watch yields")
             await asyncio.sleep(0)
             if continue_param != None:
-                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param)
+                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param, timeout=timeout)
             else:
-                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan')
+                job_events = job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan', timeout=timeout)
         except ApiException as e:
             print("Exception", e)
             # TODO - What if there are missed events between now and new resource version?
@@ -241,23 +243,25 @@ async def process_completed_pods(pod_client, job_client):
     #We are not interested in a pod that Failed.
     #There are definitely others since the job will (has) complete(d).
     limit=50
+    timeout = 5
     pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, field_selector='status.phase=Succeeded')
     while True:
         try:
-            continue_param = pod_events.metadata._continue
-            last_resource_version = pod_events.metadata.resource_version
-            #print("Got continue param", continue_param, "and last_resource_version", last_resource_version)
-            for pod in pod_events.items:
-                is_return = process_pod_object(pod, job_client)
-                if is_return:
-                    print("Pods watch returning")
-                    return
+            if len(pod_events) > 0:
+                continue_param = pod_events.metadata._continue
+                last_resource_version = pod_events.metadata.resource_version
+                #print("Got continue param", continue_param, "and last_resource_version", last_resource_version)
+                for pod in pod_events.items:
+                    is_return = process_pod_object(pod, job_client)
+                    if is_return:
+                        print("Pods watch returning")
+                        return
             #print("Pods watch yields")
             await asyncio.sleep(0)
             if continue_param != None:
-                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded')
+                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded', timeout=timeout)
             else:
-                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan',field_selector='status.phase=Succeeded')
+                pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan',field_selector='status.phase=Succeeded', timeout=timeout)
             #pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded')
             #print("Got new set of events", len(pod_events.items))
         except ApiException as e:
