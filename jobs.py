@@ -9,6 +9,7 @@ from time import sleep, time, mktime
 from numpy import percentile
 from random import randint
 import collections
+import signal
 import sys
 from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
@@ -432,5 +433,12 @@ def post_process():
     percent_discarded = pods_discarded / (pods_discarded + len(scheduler_algotimes)) * 100
     print("Pods discarded is", pods_discarded, "and that is", percent_discarded, "% of all pods")
 
+def signal_handler(sig, frame):
+    print("-----Dumping job_to_podlist for all current jobs in podwatch--------")
+    for jobname in all_jobs_podwatch:
+        print(jobname,"-",job_to_podlist[jobname])
+    print("-----DONE Dumping job_to_podlist for all current jobs in podwatch--------")
+
 if __name__ == '__main__':
+    signal.signal(signal.SIGUSR1, signal_handler)
     main()
