@@ -160,7 +160,7 @@ async def gather_stats(pod_client, job_client):
     coroutines = [process_completed_pods(pod_client, job_client), process_completed_jobs(job_client)]
     await asyncio.gather(*coroutines, return_exceptions=True)
 
-def process_job_object(job_object, job_client):
+def process_job_object(job_object, job_client, last_resource_version):
     jobname = job_object.metadata.name
     if jobname not in all_jobs_jobwatch:
         #We have finished processing this job.
@@ -175,7 +175,7 @@ def process_job_object(job_object, job_client):
     # Process the completion time of the job to calculate its JRT.
     completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
     job_completion = completed_sec_from_epoch - job_start_time[jobname]
-    print("Job", jobname, "has JRT", job_completion)
+    print("Job", jobname, "has JRT", job_completion, "v=",last_resource_version)
     jrt.append(job_completion)
     all_jobs_jobwatch.remove(jobname)
     if jobname not in all_jobs_podwatch:
@@ -213,7 +213,7 @@ async def process_completed_jobs(job_client):
     print("Starting job processing loop")
     #Run the main job loop with the resource version.
     #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
-    limit = 50
+    limit = 20
     timeout_seconds = 5
     job_events = job_client.list_namespaced_job(namespace='default', limit=limit)
     jobs_events_none_counter = 0
@@ -223,7 +223,7 @@ async def process_completed_jobs(job_client):
             last_resource_version = job_events.metadata.resource_version
             #print("Jobs - Got", len(job_events.items),"events at version -",last_resource_version)
             for job_object in job_events.items:
-                is_return = process_job_object(job_object, job_client)
+                is_return = process_job_object(job_object, job_client, last_resource_version)
                 if is_return:
                     print("No more jobs left to process")
                     return
@@ -263,7 +263,7 @@ async def process_completed_pods(pod_client, job_client):
     print("Starting pod events' loop")
     #We are not interested in a pod that Failed.
     #There are definitely others since the job will (has) complete(d).
-    limit= 50
+    limit= 200
     timeout_seconds = 5
     pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, field_selector='status.phase=Succeeded')
     pods_events_none_counter = 0
@@ -273,7 +273,7 @@ async def process_completed_pods(pod_client, job_client):
             last_resource_version = pod_events.metadata.resource_version
             #print("Pods - Got", len(pod_events.items),"events at version",last_resource_version)
             for pod in pod_events.items:
-                is_return = process_pod_object(pod, job_client)
+                is_return = process_pod_object(pod, job_client, last_resource_version)
                 if is_return:
                     print("Pods watch returning")
                     return
@@ -289,22 +289,23 @@ async def process_completed_pods(pod_client, job_client):
         if e != None:
             raise e
 
-def process_pod_object(pod, job_client):
+def process_pod_object(pod, job_client, last_resource_version):
     if 'job-name' not in pod.metadata.labels:
         return False
     jobname = pod.metadata.labels['job-name']
     if jobname not in all_jobs_podwatch:
         return False
     job_to_podlist[jobname].add(pod.metadata.name)
-    is_return = cleanup(job_client, jobname)
+    is_return = cleanup(job_client, jobname, last_resource_version)
     return is_return
 
 
-def cleanup(job_client, jobname):
+def cleanup(job_client, jobname, last_resource_version):
     #Decide to cleanup the job.
     if jobname in all_jobs_podwatch:
         if len(job_to_podlist[jobname]) >= job_to_numtasks[jobname]:
             all_jobs_podwatch.remove(jobname)
+            print("Pod list for", jobname, "is", job_to_podlist[jobname], "v=", last_resource_version)
             if jobname not in all_jobs_jobwatch:
                 #Jobs watch has also finished processing this job.
                 # Delete job since all checks have passed.
