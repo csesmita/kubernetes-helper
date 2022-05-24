@@ -199,14 +199,7 @@ async def get_job_events(job_client, limit, continue_param, timeout_seconds, las
         return job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan', timeout_seconds=timeout_seconds), None
     except ApiException as e:
         print("Exception", e)
-        print("Exception", e.getResponseBody())
-        # TODO - What if there are missed events between now and new resource version?
-        # Handle by actively querying for them.
-        if e.status == 410: # Resource too old
-            print("JOB - Caught resource version too old exception.")
-            return None, None
-        else:
-            return None, e
+        return None, e
 
 # For running this along with the job creation threads, split creation and watch on
 # two different machines.
@@ -228,17 +221,18 @@ async def process_completed_jobs(job_client):
                 if is_return:
                     print("No more jobs left to process")
                     return
-        else:
-            jobs_events_none_counter += 1
-            if jobs_events_none_counter == 3:
-                jobs_events_none_counter = 0
-                last_resource_version = 0
-                continue_param = None
         #print("Jobs watch yields")
         await asyncio.sleep(0)
         job_events, e = await get_job_events(job_client,limit, continue_param, timeout_seconds, last_resource_version)
         if e != None:
-            raise e
+            # TODO - What if there are missed events between now and new resource version?
+            # Handle by actively querying for them.
+            if e.status == 410:
+                print("JOB - Caught resource version too old exception.")
+                last_resource_version = 0
+                continue_param = None
+            else:
+                raise e
 
 #Returns pod_events and any exceptions raised
 async def get_pod_events(pod_client, limit, continue_param, timeout_seconds, last_resource_version):
@@ -249,14 +243,7 @@ async def get_pod_events(pod_client, limit, continue_param, timeout_seconds, las
         return pod_client.list_namespaced_pod(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan',field_selector='status.phase=Succeeded', timeout_seconds=timeout_seconds), None
     except ApiException as e:
         print("Exception", e)
-        print("Exception", e.getResponseBody())
-        # TODO - What if there are missed events between now and new resource version?
-        # Handle by actively querying for them.
-        if e.status == 410: # Resource too old
-            print("POD - Caught resource version too old exception.")
-            return None, None
-        else:
-            return None, e
+        return None, e
 
 
 #TODO - Reduce processing done in this func.
@@ -278,17 +265,18 @@ async def process_completed_pods(pod_client, job_client):
                 if is_return:
                     print("Pods watch returning")
                     return
-        else:
-            pods_events_none_count += 1
-            if pods_events_none_count == 3:
-                pods_events_none_count = 0
-                continue_param = None
-                last_resource_version = 0
         #print("Pods watch yields")
         await asyncio.sleep(0)
         pod_events, e = await get_pod_events(pod_client,limit, continue_param, timeout_seconds, last_resource_version)
         if e != None:
-            raise e
+            # TODO - What if there are missed events between now and new resource version?
+            # Handle by actively querying for them.
+            if e.status == 410: # Resource too old
+                print("POD - Caught resource version too old exception.")
+                continue_param = None
+                last_resource_version = 0
+            else:
+                raise e
 
 def process_pod_object(pod, job_client, last_resource_version):
     if 'job-name' not in pod.metadata.labels:
