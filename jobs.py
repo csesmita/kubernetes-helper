@@ -127,44 +127,31 @@ def main():
     f.close()
 
     #Process scheduler stats.    
-    stats(num_processes)
+    stats(max_job_id, num_processes)
     print("Script took a total of", time() - start_epoch,"s")
 
 def setup_chunks(num_jobs):
-    num_cpu = os.cpu_count() - 1
-    #Calculate max chunk size that each cpu should handle.
-    chunk_size = int(ceil(float(num_jobs) / float(num_cpu)))
-    #jobs start at id 1.
+    num_cpu = os.cpu_count() -1
     start_index = 1
-    done = False
-    count = 0
-    #Create start and ends of chunks
     for i in range(num_cpu):
-        # Max job id should be 1 more than the desired end index.
-        max_job_id = start_index + chunk_size
-        if max_job_id > num_jobs:
-            max_job_id = num_jobs + 1
-            done = True
-        chunks.put((start_index, max_job_id))
-        count += 1
-        if done:
-            # Don't need to spin up num_cpu processes.
-            break
-        start_index += chunk_size
-    return count if count < num_cpu else num_cpu
+        chunks.put(start_index)
+        if start_index == num_jobs:
+           return num_jobs
+        start_index += 1
+    return num_cpu
 
-def init_process(q):
-    start, end =  q.get()
+def init_process(q, num_jobs, num_processes):
     global all_jobs_jobwatch, all_jobs_podwatch, job_to_podlist, jrt
+    start =  q.get()
     # Global values to be used within the process.
-    all_jobs_jobwatch = [''.join(["job",str(n)]) for n in range(start, end)]
+    all_jobs_jobwatch = [''.join(["job",str(n)]) for n in range(start, num_jobs + 1, num_processes)]
     all_jobs_podwatch = all_jobs_jobwatch[:]
     # Global values to be returned by processes.
     job_to_podlist = collections.defaultdict(set)
     jrt = []
 
-def stats(num_processes):
-    with Pool(processes=num_processes, initializer=init_process, initargs=(chunks,)) as p:
+def stats(num_jobs, num_processes):
+    with Pool(processes=num_processes, initializer=init_process, initargs=(chunks, num_jobs, num_processes)) as p:
         results=[]
         #Create processes
         for i in range(num_processes):
@@ -196,7 +183,6 @@ def get_job_and_pod_events():
     # Watch for completed jobs.
     job_client = client.BatchV1Api()
     pod_client = client.CoreV1Api()
-
     ioloop = asyncio.get_event_loop()
     return ioloop.run_until_complete(gather_stats(pod_client, job_client))
 
@@ -253,7 +239,6 @@ async def process_completed_jobs(job_client):
     limit = 20
     timeout_seconds = 5
     job_events = job_client.list_namespaced_job(namespace='default', limit=limit)
-    jobs_events_none_counter = 0
     while True:
         if job_events != None:
             continue_param = job_events.metadata._continue
@@ -294,10 +279,9 @@ async def process_completed_pods(pod_client, job_client):
     print("Starting pod events' loop")
     #We are not interested in a pod that Failed.
     #There are definitely others since the job will (has) complete(d).
-    limit= 200
+    limit= 100
     timeout_seconds = 5
     pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, field_selector='status.phase=Succeeded')
-    pods_events_none_counter = 0
     while True:
         if pod_events != None:
             continue_param = pod_events.metadata._continue
@@ -334,17 +318,16 @@ def process_pod_object(pod, job_client, last_resource_version):
 
 def cleanup(job_client, jobname, last_resource_version):
     #Decide to cleanup the job.
-    if jobname in all_jobs_podwatch:
-        if len(job_to_podlist[jobname]) >= job_to_numtasks[jobname]:
-            all_jobs_podwatch.remove(jobname)
-            print("Pod list for", jobname, "is", job_to_podlist[jobname], "v=", last_resource_version)
-            if jobname not in all_jobs_jobwatch:
-                #Jobs watch has also finished processing this job.
-                # Delete job since all checks have passed.
-                job_client.delete_namespaced_job(name=jobname, namespace="default",
-                    body=client.V1DeleteOptions(
-                        grace_period_seconds=0,
-                        propagation_policy='Background'))
+    if len(job_to_podlist[jobname]) >= job_to_numtasks[jobname]:
+        all_jobs_podwatch.remove(jobname)
+        print("Pod list for", jobname, "is", job_to_podlist[jobname], "v=", last_resource_version)
+        if jobname not in all_jobs_jobwatch:
+            #Jobs watch has also finished processing this job.
+            # Delete job since all checks have passed.
+            job_client.delete_namespaced_job(name=jobname, namespace="default",
+                body=client.V1DeleteOptions(
+                    grace_period_seconds=0,
+                    propagation_policy='Background'))
     if len(all_jobs_podwatch) == 0:
         return True
     return False
@@ -359,7 +342,7 @@ def process_pod_scheduling_params(compiled, jobname):
 
     default_time = timedelta(microseconds=0)
     # job_to_podlist only contains completed jobs.
-    if len(job_to_podlist[jobname]) > job_to_numtasks[jobname]:
+    if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
         pod_str = temp = ''.join([str(item) for item in job_to_podlist[jobname]])
         raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pod_str)
     # Fetch all pod related stats for each pod.
@@ -377,7 +360,11 @@ def process_pod_scheduling_params(compiled, jobname):
         unable_sch_time = datetime.min
         attempt_bind_time = datetime.min
         nodename=''
-        logs =  subprocess.check_output(['grep','-ri',podname, 'syslog'], encoding='utf-8', text=True).split('\n')
+        try:
+            logs =  subprocess.check_output(['grep','-ri',podname, 'syslog'], encoding='utf-8', text=True).split('\n')
+        except CalledProcessError as e:
+            print("Hit exception for pod", podname)
+            raise e
         # TODO - Grep'ed logs can be out of order in time.
         # sch_queue_eject and unable_sch may happen multiple times.
         # However, this function assumes in order for caculation of scheduling and queue times.
@@ -433,6 +420,7 @@ def process_pod_scheduling_params(compiled, jobname):
     return return_results
 
 def complete_processing(results):
+    global node_to_pod_count, scheduler_to_algotimes, qtimes, algotimes
     for r in results:
         # r = (nodename, schedulername, qtime, algotime)
         node_to_pod_count[r[0]] += 1
@@ -464,10 +452,9 @@ def post_process():
     print("Pods discarded is", pods_discarded, "and that is", percent_discarded, "% of all pods")
 
 def signal_handler(sig, frame):
-    print("-----Dumping job_to_podlist for all current jobs in podwatch--------")
-    for jobname in all_jobs_podwatch:
-        print(jobname,"-",job_to_podlist[jobname])
-    print("-----DONE Dumping job_to_podlist for all current jobs in podwatch--------")
+    for jobname in job_to_podlist.keys():
+        if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
+            print(jobname,"Check its podlist", job_to_podlist[jobname])
 
 if __name__ == '__main__':
     signal.signal(signal.SIGUSR1, signal_handler)
