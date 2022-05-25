@@ -13,31 +13,23 @@ import signal
 import sys
 from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
-from multiprocessing import Pool
+from multiprocessing import Pool, Queue
+from math import ceil
 
 #TODO - Handle duplicate values when inserting into redis.
-#A list for both pods and jobs watch to keep track of.
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
 SPEEDUP = 200
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
-#A list for jobs' watch to keep track of.
-all_jobs_jobwatch = set()
-#A list for pods' watch to keep track of.
-all_jobs_podwatch = set()
+chunks = Queue()
 job_start_time = {}
 #Stats printed out.
 pods_discarded = 0
 jrt = []
 qtimes = []
 algotimes = []
-pod_start = {}
-pod_end = {}
-pod_node = {}
-pod_durations = {}
-pod_qdiff= {}
 node_to_pod_count = collections.defaultdict(int)
 scheduler_to_algotimes = collections.defaultdict(int)
 
@@ -95,13 +87,11 @@ def setup(is_central, num_sch):
         # Cleanup possible remnants of an older run
         q.delete(jobstr)
         q.rpush(actual_duration)
-        all_jobs_jobwatch.add(jobstr)
-        all_jobs_podwatch.add(jobstr)
     f.close()
-
+    return jobid
 
 def main():
-    jobid = 0
+    jobid=0
     start_epoch = 0.0
     threads = []
 
@@ -111,7 +101,8 @@ def main():
 
     is_central = sys.argv[1] == 'c'
     num_sch = int(sys.argv[2])
-    setup(is_central, num_sch)
+    max_job_id = setup(is_central, num_sch)
+    num_processes = setup_chunks(max_job_id)
     # Process workload file
     f = open('temp.tr', 'r')
     for row in f:
@@ -136,30 +127,82 @@ def main():
     f.close()
 
     #Process scheduler stats.    
-    stats(jobid)
+    stats(num_processes)
     print("Script took a total of", time() - start_epoch,"s")
 
-def stats(num_jobs):
-    pending_jobs = True
+def setup_chunks(num_jobs):
+    num_cpu = os.cpu_count() - 1
+    #Calculate max chunk size that each cpu should handle.
+    chunk_size = int(ceil(float(num_jobs) / float(num_cpu)))
+    #jobs start at id 1.
+    start_index = 1
+    done = False
+    count = 0
+    #Create start and ends of chunks
+    for i in range(num_cpu):
+        # Max job id should be 1 more than the desired end index.
+        max_job_id = start_index + chunk_size
+        if max_job_id > num_jobs:
+            max_job_id = num_jobs + 1
+            done = True
+        chunks.put((start_index, max_job_id))
+        count += 1
+        if done:
+            # Don't need to spin up num_cpu processes.
+            break
+        start_index += chunk_size
+    return count if count < num_cpu else num_cpu
+
+def init_process(q):
+    start, end =  q.get()
+    global all_jobs_jobwatch, all_jobs_podwatch, job_to_podlist, jrt
+    # Global values to be used within the process.
+    all_jobs_jobwatch = [''.join(["job",str(n)]) for n in range(start, end)]
+    all_jobs_podwatch = all_jobs_jobwatch[:]
+    # Global values to be returned by processes.
+    job_to_podlist = collections.defaultdict(set)
+    jrt = []
+
+def stats(num_processes):
+    with Pool(processes=num_processes, initializer=init_process, initargs=(chunks,)) as p:
+        results=[]
+        #Create processes
+        for i in range(num_processes):
+            #Spin up the process
+            r = p.apply_async(get_job_and_pod_events, (), callback=stitch_partial_results)
+            #Remember to wait for results
+            results.append(r)
+        for r in results:
+            r.wait()
+
     #Change directory to scheduler logs
     os.chdir("/local/scratch/")
     #Look for 12:14:58.422793 pattern in logs
     pattern = '\d{2}:\d{2}:\d{2}\.\d{6}'
     compiled = re.compile(pattern)
 
+    process(compiled)
+    post_process()
+
+def stitch_partial_results(partial_results):
+    global job_to_podlist, jrt
+    #partial_results is of the form (job_to_podlist, jrt)
+    partial_job_to_podlist = partial_results[0]
+    partial_jrt = partial_results[1]
+    job_to_podlist.update(partial_job_to_podlist)
+    jrt = jrt + partial_jrt
+
+def get_job_and_pod_events():
     # Watch for completed jobs.
     job_client = client.BatchV1Api()
     pod_client = client.CoreV1Api()
 
     ioloop = asyncio.get_event_loop()
-    ioloop.run_until_complete(gather_stats(pod_client, job_client))
-
-    process(compiled)
-    post_process()
+    return ioloop.run_until_complete(gather_stats(pod_client, job_client))
 
 async def gather_stats(pod_client, job_client):
     coroutines = [process_completed_pods(pod_client, job_client), process_completed_jobs(job_client)]
-    await asyncio.gather(*coroutines, return_exceptions=True)
+    return await asyncio.gather(*coroutines, return_exceptions=True)
 
 def process_job_object(job_object, job_client, last_resource_version):
     jobname = job_object.metadata.name
@@ -220,7 +263,7 @@ async def process_completed_jobs(job_client):
                 is_return = process_job_object(job_object, job_client, last_resource_version)
                 if is_return:
                     print("No more jobs left to process")
-                    return
+                    return jrt
         #print("Jobs watch yields")
         await asyncio.sleep(0)
         job_events, e = await get_job_events(job_client,limit, continue_param, timeout_seconds, last_resource_version)
@@ -263,8 +306,8 @@ async def process_completed_pods(pod_client, job_client):
             for pod in pod_events.items:
                 is_return = process_pod_object(pod, job_client, last_resource_version)
                 if is_return:
-                    print("Pods watch returning")
-                    return
+                    print("No more pods left to process")
+                    return job_to_podlist
         #print("Pods watch yields")
         await asyncio.sleep(0)
         pod_events, e = await get_pod_events(pod_client,limit, continue_param, timeout_seconds, last_resource_version)
@@ -303,7 +346,6 @@ def cleanup(job_client, jobname, last_resource_version):
                         grace_period_seconds=0,
                         propagation_policy='Background'))
     if len(all_jobs_podwatch) == 0:
-        print("Request to terminate pod loop")
         return True
     return False
 
