@@ -130,6 +130,8 @@ def main():
     stats(max_job_id, num_processes)
     print("Script took a total of", time() - start_epoch,"s")
 
+#Set up job allocation for worker processes.
+#This evenly distributes events' load on processes.
 def setup_chunks(num_jobs):
     num_cpu = os.cpu_count() -1
     start_index = 1
@@ -140,16 +142,15 @@ def setup_chunks(num_jobs):
         start_index += 1
     return num_cpu
 
+#For this worker process, setup some process variables.
 def init_process(q, num_jobs, num_processes):
-    global all_jobs_jobwatch, all_jobs_podwatch, job_to_podlist, jrt
+    global all_jobs_jobwatch, jrt
     start =  q.get()
     # Global values to be used within the process.
     all_jobs_jobwatch = [''.join(["job",str(n)]) for n in range(start, num_jobs + 1, num_processes)]
-    all_jobs_podwatch = all_jobs_jobwatch[:]
-    # Global values to be returned by processes.
-    job_to_podlist = collections.defaultdict(set)
     jrt = []
 
+# Start the worker processes to catch job completion events.
 def stats(num_jobs, num_processes):
     with Pool(processes=num_processes, initializer=init_process, initargs=(chunks, num_jobs, num_processes)) as p:
         results=[]
@@ -162,21 +163,16 @@ def stats(num_jobs, num_processes):
         for r in results:
             r.wait()
 
-    #Change directory to scheduler logs
-    os.chdir("/local/scratch/")
     #Look for 12:14:58.422793 pattern in logs
     pattern = '\d{2}:\d{2}:\d{2}\.\d{6}'
     compiled = re.compile(pattern)
 
-    process(compiled)
+    process(compiled, num_jobs)
     post_process()
 
 def stitch_partial_results(partial_results):
-    global job_to_podlist, jrt
-    #partial_results is of the form (job_to_podlist, jrt)
-    partial_job_to_podlist = partial_results[0]
-    partial_jrt = partial_results[1]
-    job_to_podlist.update(partial_job_to_podlist)
+    global jrt
+    partial_jrt = partial_results[0]
     jrt = jrt + partial_jrt
 
 def get_job_and_pod_events():
@@ -187,7 +183,8 @@ def get_job_and_pod_events():
     return ioloop.run_until_complete(gather_stats(pod_client, job_client))
 
 async def gather_stats(pod_client, job_client):
-    coroutines = [process_completed_pods(pod_client, job_client), process_completed_jobs(job_client)]
+    #coroutines = [process_completed_pods(pod_client, job_client), process_completed_jobs(job_client)]
+    coroutines = [process_completed_jobs(job_client)]
     return await asyncio.gather(*coroutines, return_exceptions=True)
 
 def process_job_object(job_object, job_client, last_resource_version):
@@ -208,13 +205,10 @@ def process_job_object(job_object, job_client, last_resource_version):
     print("Job", jobname, "has JRT", job_completion, "v=",last_resource_version)
     jrt.append(job_completion)
     all_jobs_jobwatch.remove(jobname)
-    if jobname not in all_jobs_podwatch:
-        #Pods watch has also finished processing this job.
-        # Delete job since all checks have passed.
-        job_client.delete_namespaced_job(name=jobname, namespace="default",
-            body=client.V1DeleteOptions(
-                grace_period_seconds=0,
-                propagation_policy='Background'))
+    job_client.delete_namespaced_job(name=jobname, namespace="default",
+        body=client.V1DeleteOptions(
+            grace_period_seconds=0,
+            propagation_policy='Background'))
     if len(all_jobs_jobwatch) == 0:
         return True
     return False
@@ -261,77 +255,6 @@ async def process_completed_jobs(job_client):
                 continue_param = None
             else:
                 raise e
-
-#Returns pod_events and any exceptions raised
-async def get_pod_events(pod_client, limit, continue_param, timeout_seconds, last_resource_version):
-    try:
-        if continue_param != None:
-            return pod_client.list_namespaced_pod(namespace='default', limit=limit, _continue=continue_param, field_selector='status.phase=Succeeded', timeout_seconds=timeout_seconds), None
-        #If resource_version is set then send the events from exact version, else if 0, then send event from any version.
-        return pod_client.list_namespaced_pod(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan',field_selector='status.phase=Succeeded', timeout_seconds=timeout_seconds), None
-    except ApiException as e:
-        print("Exception", e)
-        return None, e
-
-
-#TODO - Reduce processing done in this func.
-async def process_completed_pods(pod_client, job_client):
-    print("Starting pod events' loop")
-    #We are not interested in a pod that Failed.
-    #There are definitely others since the job will (has) complete(d).
-    limit= 100
-    timeout_seconds = 5
-    pod_events = pod_client.list_namespaced_pod(namespace='default', limit=limit, field_selector='status.phase=Succeeded')
-    while True:
-        if pod_events != None:
-            continue_param = pod_events.metadata._continue
-            last_resource_version = pod_events.metadata.resource_version
-            #print("Pods - Got", len(pod_events.items),"events at version",last_resource_version)
-            for pod in pod_events.items:
-                is_return = process_pod_object(pod, job_client, last_resource_version)
-                if is_return:
-                    print("No more pods left to process")
-                    return job_to_podlist
-        #print("Pods watch yields")
-        await asyncio.sleep(0)
-        pod_events, e = await get_pod_events(pod_client,limit, continue_param, timeout_seconds, last_resource_version)
-        if e != None:
-            # TODO - What if there are missed events between now and new resource version?
-            # Handle by actively querying for them.
-            if e.status == 410: # Resource too old
-                print("POD - Caught resource version too old exception.")
-                continue_param = None
-                last_resource_version = 0
-            else:
-                raise e
-
-def process_pod_object(pod, job_client, last_resource_version):
-    if 'job-name' not in pod.metadata.labels:
-        return False
-    jobname = pod.metadata.labels['job-name']
-    if jobname not in all_jobs_podwatch:
-        return False
-    job_to_podlist[jobname].add(pod.metadata.name)
-    is_return = cleanup(job_client, jobname, last_resource_version)
-    return is_return
-
-
-def cleanup(job_client, jobname, last_resource_version):
-    #Decide to cleanup the job.
-    if len(job_to_podlist[jobname]) >= job_to_numtasks[jobname]:
-        all_jobs_podwatch.remove(jobname)
-        print("Pod list for", jobname, "is", job_to_podlist[jobname], "v=", last_resource_version)
-        if jobname not in all_jobs_jobwatch:
-            #Jobs watch has also finished processing this job.
-            # Delete job since all checks have passed.
-            job_client.delete_namespaced_job(name=jobname, namespace="default",
-                body=client.V1DeleteOptions(
-                    grace_period_seconds=0,
-                    propagation_policy='Background'))
-    if len(all_jobs_podwatch) == 0:
-        return True
-    return False
-
 
 def process_pod_scheduling_params(compiled, jobname):
     QUEUE_ADD_LOG    = "Add event for unscheduled pod"
@@ -428,8 +351,19 @@ def complete_processing(results):
         qtimes.append(r[2])
         algotimes.append(r[3])
 
-def process(compiled):
+def process(compiled, num_jobs):
     num_cpu = os.cpu_count() - 1
+    out = subprocess.call(['./pods.sh', str(num_jobs)])
+    #create job_to_podlist
+    f = open('pods.txt', 'r')
+    jobid=0
+    for row in f:
+        jobid += 1
+        jobname = "".join(["job",str(jobid)])
+        job_to_podlist[jobname] = row.split()
+
+    #Change directory to scheduler logs
+    os.chdir("/local/scratch/")
     with Pool(num_cpu) as p:
         results=[]
         for jobname in job_to_podlist.keys():
@@ -455,6 +389,7 @@ def signal_handler(sig, frame):
     for jobname in job_to_podlist.keys():
         if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
             print(jobname,"Check its podlist", job_to_podlist[jobname])
+    print("List of jobs in job_to_podlist is", job_to_podlist.keys())
 
 if __name__ == '__main__':
     signal.signal(signal.SIGUSR1, signal_handler)
