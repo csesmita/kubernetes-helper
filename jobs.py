@@ -257,6 +257,7 @@ async def process_completed_jobs(job_client):
                 raise e
 
 def process_pod_scheduling_params(compiled, jobname):
+    global job_to_numtasks, job_to_scheduler
     QUEUE_ADD_LOG    = "Add event for unscheduled pod"
     QUEUE_DELETE_LOG = "Delete event for unscheduled pod"
     START_SCH_LOG    = "About to try and schedule pod"
@@ -284,13 +285,10 @@ def process_pod_scheduling_params(compiled, jobname):
         attempt_bind_time = datetime.min
         nodename=''
         try:
-            logs =  subprocess.check_output(['grep','-ri',podname, 'syslog'], encoding='utf-8', text=True).split('\n')
+            logs = subprocess.check_output(['./pods.sh', str(0), podname], encoding='utf-8', text=True).split('\n')
         except CalledProcessError as e:
             print("Hit exception for pod", podname)
             raise e
-        # TODO - Grep'ed logs can be out of order in time.
-        # sch_queue_eject and unable_sch may happen multiple times.
-        # However, this function assumes in order for caculation of scheduling and queue times.
         for log in logs:
             #This log happens exactly once
             if QUEUE_ADD_LOG in log:
@@ -327,7 +325,7 @@ def process_pod_scheduling_params(compiled, jobname):
             if BIND_LOG in log:
                 if start_sch_time == datetime.min:
                     # This happens if some logs failed to make it to the distributed logging service.
-                    print("---------Check calculcations for pod for unschedulable pod time", podname)
+                    print("---------Check calculcations for pod for bind time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     pods_discarded += 1
                     break
@@ -362,8 +360,6 @@ def process(compiled, num_jobs):
         jobname = "".join(["job",str(jobid)])
         job_to_podlist[jobname] = row.split()
 
-    #Change directory to scheduler logs
-    os.chdir("/local/scratch/")
     with Pool(num_cpu) as p:
         results=[]
         for jobname in job_to_podlist.keys():
