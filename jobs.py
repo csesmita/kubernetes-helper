@@ -164,13 +164,6 @@ def stats(num_jobs, num_processes):
         for r in results:
             r.wait()
 
-    #Look for 12:14:58.422793 pattern in logs
-    pattern = '\d{2}:\d{2}:\d{2}\.\d{6}'
-    compiled = re.compile(pattern)
-
-    process(compiled, num_jobs)
-    post_process()
-
 def stitch_partial_results(partial_results):
     global jrt
     partial_jrt = partial_results[0]
@@ -257,157 +250,10 @@ async def process_completed_jobs(job_client):
             else:
                 raise e
 
-def process_pod_scheduling_params(compiled, jobname):
-    global job_to_numtasks, job_to_scheduler
-    QUEUE_ADD_LOG    = "Add event for unscheduled pod"
-    QUEUE_DELETE_LOG = "Delete event for unscheduled pod"
-    START_SCH_LOG    = "About to try and schedule pod"
-    UNABLE_SCH_LOG   = "Unable to schedule pod"
-    BIND_LOG         = "Attempting to bind pod to node"
-    KUBELET_Q_ADD    = "Added pod to worker queue"
-    KUBELET_Q_DELETE = "Ejecting pod from worker queue"
-
-    default_time = timedelta(microseconds=0)
-    # job_to_podlist only contains completed jobs.
-    if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
-        pod_str = temp = ''.join([str(item) for item in job_to_podlist[jobname]])
-        raise AssertionError("For " + jobname + "number of tasks is " + str(job_to_numtasks[jobname]) + "but its list has the following pods" + pod_str)
-    # Fetch all pod related stats for each pod.
-    pods = job_to_podlist[jobname]
-    schedulername = job_to_scheduler[jobname]
-    return_results = []
-    for podname in pods:
-        #Two (maybe three) outputs for this pod
-        queue_time = timedelta(microseconds=0)
-        kubelet_queue_time = timedelta(microseconds=0)
-        scheduling_algorithm_time = timedelta(microseconds=0)
-        #Interim points
-        queue_add_time = datetime.min
-        queue_eject_time = datetime.min
-        start_sch_time = datetime.min
-        unable_sch_time = datetime.min
-        attempt_bind_time = datetime.min
-        kubelet_queue_add_time = datetime.min
-        kubelet_queue_eject_time = datetime.min
-        nodename=''
-        try:
-            logs = subprocess.check_output(['./pods.sh', str(0), podname], encoding='utf-8', text=True).split('\n')
-        except CalledProcessError as e:
-            print("Hit exception for pod", podname)
-            raise e
-        for log in logs:
-            #This log happens exactly once
-            if QUEUE_ADD_LOG in log:
-                if queue_add_time > datetime.min:
-                    raise AssertionError("--------Check calculcations for pod for queue add time"+ podname)
-                queue_add_time = extractDateTime(compiled.search(log).group(0))
-                continue
-            #This log happens exactly once
-            if QUEUE_DELETE_LOG in log:
-                queue_eject_time = extractDateTime(compiled.search(log).group(0))
-                #print("Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time)
-                queue_time = queue_eject_time - queue_add_time
-                break
-            if START_SCH_LOG in log:
-                if start_sch_time > datetime.min:
-                    print("--------Check calculcations for pod for start sch time", podname)
-                    #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
-                    break
-                start_sch_time = extractDateTime(compiled.search(log).group(0))
-                continue
-            if UNABLE_SCH_LOG in log:
-                if start_sch_time == datetime.min:
-                    # This happens if some logs failed to make it to the distributed logging service.
-                    print("--------Check calculcations for pod for unschedulable pod time", podname)
-                    #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
-                    break
-                unable_sch_time = extractDateTime(compiled.search(log).group(0))
-                scheduling_algorithm_time = scheduling_algorithm_time + unable_sch_time - start_sch_time
-                start_sch_time = datetime.min
-                continue
-            #This log happens exactly once
-            if BIND_LOG in log:
-                if start_sch_time == datetime.min:
-                    # This happens if some logs failed to make it to the distributed logging service.
-                    print("---------Check calculcations for pod for bind time", podname)
-                    #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
-                    break
-                attempt_bind_time = extractDateTime(compiled.search(log).group(0))
-                scheduling_algorithm_time = scheduling_algorithm_time + attempt_bind_time - start_sch_time
-                start_sch_time = datetime.min
-                nodename = log.split('node=')[1]
-                continue
-            if KUBELET_Q_ADD in log:
-                if kubelet_queue_add_time > datetime.min:
-                    print("--------Check calculcations for pod for kubelet queue add time", podname)
-                    #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
-                    break
-                kubelet_queue_add_time = extractDateTime(compiled.search(log).group(0))
-                continue
-            if KUBELET_Q_DELETE in log:
-                kubelet_queue_eject_time = extractDateTime(compiled.search(log).group(0))
-                kubelet_queue_time = kubelet_queue_eject_time - kubelet_queue_add_time
-                break
-        print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Kubelet Queue Time", kubelet_queue_time, "Node", nodename)
-        qtime = timeDiff(queue_time, default_time)
-        algotime = timeDiff(scheduling_algorithm_time, default_time)
-        kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-        return_results.append((nodename, schedulername, qtime, algotime, kubeletqtime))
-    return return_results
-
-def complete_processing(results):
-    global node_to_pod_count, scheduler_to_algotimes, qtimes, algotimes, kubeletqtimes
-    for r in results:
-        # r = (nodename, schedulername, qtime, algotime, kubeletqtime)
-        node_to_pod_count[r[0]] += 1
-        scheduler_to_algotimes[r[1]] += r[3]
-        qtimes.append(r[2])
-        algotimes.append(r[3])
-        kubeletqtimes.append(r[4])
-
-def process(compiled, num_jobs):
-    num_cpu = os.cpu_count() - 1
-    out = subprocess.call(['./pods.sh', str(num_jobs)])
-    #create job_to_podlist
-    f = open('pods.txt', 'r')
-    jobid=0
-    for row in f:
-        jobid += 1
-        jobname = "".join(["job",str(jobid)])
-        job_to_podlist[jobname] = row.split()
-
-    with Pool(num_cpu) as p:
-        results=[]
-        for jobname in job_to_podlist.keys():
-            r = p.apply_async(process_pod_scheduling_params, (compiled, jobname), callback=complete_processing)
-            results.append(r)
-        for r in results:
-            r.wait()
-
 def post_process():
-    node_to_pods = list(dict(sorted(node_to_pod_count.items(), key=lambda item: item[1])).values())
     scheduler_algotimes = list(dict(sorted(scheduler_to_algotimes.items(), key=lambda v:(v[1]))).values())
-    print("Total number of pods evaluated", len(qtimes))
-    print("Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99))
-    print("Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99))
-    print("Stats for Kubelet Queue Times -",percentile(kubeletqtimes, 50), percentile(kubeletqtimes, 90), percentile(kubeletqtimes, 99))
     print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
     print("Schedulers and number of tasks they assigned", schedulertojob)
-    print("Count of pods on nodes", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99))
-    print("Scheduler algorithm time per scheduler", percentile(scheduler_algotimes, 50), percentile(scheduler_algotimes, 90), percentile(scheduler_algotimes, 99))
-    percent_discarded = pods_discarded / (pods_discarded + len(scheduler_algotimes)) * 100
-    print("Pods discarded is", pods_discarded, "and that is", percent_discarded, "% of all pods")
-
-def signal_handler(sig, frame):
-    for jobname in job_to_podlist.keys():
-        if len(job_to_podlist[jobname]) != job_to_numtasks[jobname]:
-            print(jobname,"Check its podlist", job_to_podlist[jobname])
-    print("List of jobs in job_to_podlist is", job_to_podlist.keys())
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGUSR1, signal_handler)
     main()
