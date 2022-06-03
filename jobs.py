@@ -30,6 +30,7 @@ pods_discarded = 0
 jrt = []
 qtimes = []
 algotimes = []
+kubeletqtimes = []
 node_to_pod_count = collections.defaultdict(int)
 scheduler_to_algotimes = collections.defaultdict(int)
 
@@ -263,6 +264,8 @@ def process_pod_scheduling_params(compiled, jobname):
     START_SCH_LOG    = "About to try and schedule pod"
     UNABLE_SCH_LOG   = "Unable to schedule pod"
     BIND_LOG         = "Attempting to bind pod to node"
+    KUBELET_Q_ADD    = "Added pod to worker queue"
+    KUBELET_Q_DELETE = "Ejecting pod from worker queue"
 
     default_time = timedelta(microseconds=0)
     # job_to_podlist only contains completed jobs.
@@ -274,8 +277,9 @@ def process_pod_scheduling_params(compiled, jobname):
     schedulername = job_to_scheduler[jobname]
     return_results = []
     for podname in pods:
-        #Two outputs for this pod
+        #Two (maybe three) outputs for this pod
         queue_time = timedelta(microseconds=0)
+        kubelet_queue_time = timedelta(microseconds=0)
         scheduling_algorithm_time = timedelta(microseconds=0)
         #Interim points
         queue_add_time = datetime.min
@@ -283,6 +287,8 @@ def process_pod_scheduling_params(compiled, jobname):
         start_sch_time = datetime.min
         unable_sch_time = datetime.min
         attempt_bind_time = datetime.min
+        kubelet_queue_add_time = datetime.min
+        kubelet_queue_eject_time = datetime.min
         nodename=''
         try:
             logs = subprocess.check_output(['./pods.sh', str(0), podname], encoding='utf-8', text=True).split('\n')
@@ -334,20 +340,34 @@ def process_pod_scheduling_params(compiled, jobname):
                 start_sch_time = datetime.min
                 nodename = log.split('node=')[1]
                 continue
-        #print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Node", nodename)
+            if KUBELET_Q_ADD in log:
+                if kubelet_queue_add_time > datetime.min:
+                    print("--------Check calculcations for pod for kubelet queue add time", podname)
+                    #Skip this pod's scheduling queue and algorithm time calculations.
+                    pods_discarded += 1
+                    break
+                kubelet_queue_add_time = extractDateTime(compiled.search(log).group(0))
+                continue
+            if KUBELET_Q_DELETE in log:
+                kubelet_queue_eject_time = extractDateTime(compiled.search(log).group(0))
+                kubelet_queue_time = kubelet_queue_eject_time - kubelet_queue_add_time
+                break
+        print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Kubelet Queue Time", kubelet_queue_time, "Node", nodename)
         qtime = timeDiff(queue_time, default_time)
         algotime = timeDiff(scheduling_algorithm_time, default_time)
-        return_results.append((nodename, schedulername, qtime, algotime))
+        kubeletqtime = timeDiff(kubelet_queue_time, default_time)
+        return_results.append((nodename, schedulername, qtime, algotime, kubeletqtime))
     return return_results
 
 def complete_processing(results):
-    global node_to_pod_count, scheduler_to_algotimes, qtimes, algotimes
+    global node_to_pod_count, scheduler_to_algotimes, qtimes, algotimes, kubeletqtimes
     for r in results:
-        # r = (nodename, schedulername, qtime, algotime)
+        # r = (nodename, schedulername, qtime, algotime, kubeletqtime)
         node_to_pod_count[r[0]] += 1
         scheduler_to_algotimes[r[1]] += r[3]
         qtimes.append(r[2])
         algotimes.append(r[3])
+        kubeletqtimes.append(r[4])
 
 def process(compiled, num_jobs):
     num_cpu = os.cpu_count() - 1
@@ -374,6 +394,7 @@ def post_process():
     print("Total number of pods evaluated", len(qtimes))
     print("Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99))
     print("Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99))
+    print("Stats for Kubelet Queue Times -",percentile(kubeletqtimes, 50), percentile(kubeletqtimes, 90), percentile(kubeletqtimes, 99))
     print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
     print("Schedulers and number of tasks they assigned", schedulertojob)
     print("Count of pods on nodes", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99))
