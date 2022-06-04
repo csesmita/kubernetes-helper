@@ -25,6 +25,7 @@ job_to_scheduler = {}
 job_to_numtasks = {}
 chunks = Queue()
 job_start_time = {}
+max_job_id = 0
 #Stats printed out.
 pods_discarded = 0
 jrt = []
@@ -92,6 +93,7 @@ def setup(is_central, num_sch):
     return jobid
 
 def main():
+    global max_job_id
     jobid=0
     start_epoch = 0.0
     threads = []
@@ -103,7 +105,7 @@ def main():
     is_central = sys.argv[1] == 'c'
     num_sch = int(sys.argv[2])
     max_job_id = setup(is_central, num_sch)
-    num_processes = setup_chunks(max_job_id)
+    num_processes = setup_chunks()
     # Process workload file
     f = open('temp.tr', 'r')
     for row in f:
@@ -128,18 +130,19 @@ def main():
     f.close()
 
     #Process scheduler stats.    
-    stats(max_job_id, num_processes)
+    stats(num_processes)
     print("Script took a total of", time() - start_epoch,"s")
 
 #Set up job allocation for worker processes.
 #This evenly distributes events' load on processes.
-def setup_chunks(num_jobs):
+def setup_chunks():
+    global max_job_id
     num_cpu = os.cpu_count() -1
     start_index = 1
     for i in range(num_cpu):
         chunks.put(start_index)
-        if start_index == num_jobs:
-           return num_jobs
+        if start_index == max_job_id:
+           return max_job_id
         start_index += 1
     return num_cpu
 
@@ -152,8 +155,8 @@ def init_process(q, num_jobs, num_processes):
     jrt = []
 
 # Start the worker processes to catch job completion events.
-def stats(num_jobs, num_processes):
-    with Pool(processes=num_processes, initializer=init_process, initargs=(chunks, num_jobs, num_processes)) as p:
+def stats(num_processes):
+    with Pool(processes=num_processes, initializer=init_process, initargs=(chunks, max_job_id, num_processes)) as p:
         results=[]
         #Create processes
         for i in range(num_processes):
@@ -251,7 +254,7 @@ async def process_completed_jobs(job_client):
                 raise e
 
 def post_process():
-    scheduler_algotimes = list(dict(sorted(scheduler_to_algotimes.items(), key=lambda v:(v[1]))).values())
+    print("Total number of jobs is", max_job_id)
     print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
     print("Schedulers and number of tasks they assigned", schedulertojob)
 
