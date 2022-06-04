@@ -1,26 +1,22 @@
 #!/bin/bash
-
+#This script first finds the pods of the given job.
+#It then looks for logs of each of the pods, sorts them by
+#the log creation timestamp, and writes them into a file.
 match="Work completed by this task"
 if [ "$#" -eq 1 ]; then
-    rm pods.txt || true
-    #return podnames for all jobs
-    for (( i=1; i<=$1; i++ )) 
-    do
-        jobs=()
-        jobname="job$i"
-        podprefix="${jobname}-"
-        while read -r line; do
-           if [[ $line == *${match}* ]]; then
-               jobs+=( "$(cut -d' ' -f6 <<< ${line} | cut -d':' -f1)" )
-           fi
-        done < <(grep $podprefix /local/scratch/syslog)
-        printf "${jobs[*]} \n" >> pods.txt
-    done
-elif [ "$#" -eq 2 ]; then
-    #return timestamp sorted logs for this pod.
-    podname=$2
-    logs=$(grep $podname /local/scratch/syslog |sort -k7)
-    echo "$logs"
+    jobname=$1
+    podprefix="${jobname}-"
+    filename="${jobname}.txt"
+    rm $filename || true
+    while read -r line; do
+       if [[ $line == *${match}* ]]; then
+           podname=( "$(cut -d' ' -f7 <<< ${line} | cut -d':' -f1)" )
+           echo "Got podname $podname"
+           #return timestamp sorted logs for these pods.
+           logs=$(grep $podname /local/scratch/syslog.d |sort -k7)
+           echo "$logs" >> $filename
+       fi
+    done < <(grep $podprefix /local/scratch/syslog.d)
 else
     echo "Illegal number of arguments."
 fi
