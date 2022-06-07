@@ -11,7 +11,7 @@ if [ "$#" -eq 2 ]; then
     numpods=$2
     podprefix="${jobname}-"
     filename="${jobname}.txt"
-    rm $filename || true
+    rm -f $filename || true
     count=0
     #These are the log lines per pod we are interested in -
     #1(Add event for unscheduled pod)
@@ -36,6 +36,7 @@ if [ "$#" -eq 2 ]; then
            startline=$(grep -n -m 1 "$start_scheduling.*$podname"  /local/scratch/syslog.d|awk -F":" {'print $1'})
            endline=$(grep -n -m 1 "$end_scheduling.*$podname"  /local/scratch/syslog.d |awk -F":" {'print $1'})
            logs=$(tail -n +$startline /local/scratch/syslog.d |head -n $(($endline - $startline)) | LC_ALL=C fgrep $podname | sort -k7)
+           echo "Logs for $podname" >> $filename
            echo "$logs" >> $filename
            ((count++))
            if [ $count -eq $numpods ]; then
@@ -43,8 +44,6 @@ if [ "$#" -eq 2 ]; then
            fi
        fi
     done < <(LC_ALL=C fgrep $podprefix /local/scratch/syslog.d)
-    echo "${#pods[@]}" >> $filename
-    printf "${pods[*]} \n" >> $filename
 else
     echo "Illegal number of arguments."
 fi
