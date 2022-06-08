@@ -166,6 +166,7 @@ def stats(num_processes):
             results.append(r)
         for r in results:
             r.wait()
+    post_process()
 
 def stitch_partial_results(partial_results):
     global jrt
