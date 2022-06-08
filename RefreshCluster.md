@@ -31,6 +31,12 @@ kubectl create secret docker-registry regcred -n kube-system --docker-server=htt
 
 kubectl patch serviceaccount my-scheduler -n kube-system  -p '{"imagePullSecrets": [{"name": "regcred"}]}'
 
+
+// At this point, create worker nodes so other kube-system pods can be hosted on them.
+
+//If nodes say NotReady with CNI network not ready error, then run worker-reset on all noes again, without cni0 and flannel.1 interface actions. Then the kubeadm init should bring nodes back.
+
+
 For custom scheduler instances - First create the service account (my-scheduler) then apply the scheduler configs.
 
 After applying scheduler1, etc confirm regcred has been added. 
@@ -40,6 +46,7 @@ kubectl get pod scheduler1-xxx -n kube-system -o=jsonpath='{.spec.imagePullSecre
 
 // Disable API Server Rate limiting
 // Disable enable-priority-and-fairness flag in API server.
+// Perhaps set events-ttl to 3h0m0s or whatever time the script runs for.
 
 
 
@@ -52,14 +59,13 @@ kubectl attach redis-image -c redis-image -i -t
 
 //Change Redis IP in files - create script and in job.yaml. No docker image rebuilding required. 
 
-// Change logging levels of kube-scheduler by copying from /tmp, and --terminated-pod-gc-threshold by copying kube-controller-manager from /tmp. 
+// Change logging levels of kube-scheduler by copying from /tmp.
 
-// Change event-ttl in kube-apiserver if needed.
 
-// Copy config dir from 104 to 306.
+// Copy config dir from Master (104) to Management(306).
 //scp -r /home/sv440/.kube/  caelum-306:
 
-// Set taint on 306. Kubectl taint nodes caelum-306 key1=value1:NoSchedule. 
+// Set taint on 306. kubectl taint nodes caelum-306 key1=value1:NoSchedule 
 
 // Verify - kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers 
 
