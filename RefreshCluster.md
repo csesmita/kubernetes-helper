@@ -1,3 +1,17 @@
+### Starting a New Cluster
+
+New Cluster Setup Steps -
+
+1. Setup git Kubernetes-helper on the master node. (Node 0) - Generate personal access token and copy into node0 git clone command (password).
+2. Bash remote-setup.sh on master node.
+3. Change node array names in setup-workers.sh. Run it with remote-setup.sh on every worker node.
+4. Add kubeadm join command into worker-reset.sh. Run that using setup-workers.sh
+5. Run RefreshCluster
+6. Setup distributed logging and docker logging.
+
+
+### Reset an existing cluster
+
 To restart master and workers -
 
 yes | sudo kubeadm reset && sudo iptables -F && sudo iptables -t nat -F && sudo iptables -t mangle -F && sudo iptables -X && sudo rm -rf /etc/cni/net.d && sudo rm -rf $HOME/.kube/config && sudo ip link set cni0 down && sudo ip link set flannel.1 down && sudo ip link delete cni0 && sudo ip link delete flannel.1 && sudo systemctl restart containerd && sudo systemctl restart kubelet
