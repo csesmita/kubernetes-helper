@@ -224,7 +224,6 @@ async def get_job_events(job_client, limit, continue_param, timeout_seconds, las
 # For running this along with the job creation threads, split creation and watch on
 # two different machines.
 async def process_completed_jobs(job_client):
-    print("Starting job processing loop")
     #Run the main job loop with the resource version.
     #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
     limit = 20
@@ -238,7 +237,6 @@ async def process_completed_jobs(job_client):
             for job_object in job_events.items:
                 is_return = process_job_object(job_object, job_client, last_resource_version)
                 if is_return:
-                    print("No more jobs left to process")
                     return jrt
         #print("Jobs watch yields")
         await asyncio.sleep(0)
