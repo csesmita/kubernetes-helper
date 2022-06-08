@@ -14,6 +14,12 @@ mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 (For the following command try =\$w1tch\#123 with no " " if the command fails.)
 kubectl create secret docker-registry regcred --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
 
+
+// Default scheduler - Create /etc/kubernetes/schedulerconf folder and copy in kube-scheduler.conf into it.
+
+// Copy /etc/kubernetes/kube-scheduler scheduler.conf into schedulerconf/ if using the multi profile with schedulerconf/
+
+
 kubectl apply -f  my-scheduler.yaml 
 
 Similarly, create the regcred secret for my-scheduler service account -
@@ -45,7 +51,7 @@ kubectl attach redis-image -c redis-image -i -t
 //Change Redis IP in files - create script and in job.yaml. No docker image rebuilding required. 
 
 // Change logging levels of kube-scheduler by copying from /tmp, and --terminated-pod-gc-threshold by copying kube-controller-manager from /tmp. 
-// Copy kube-scheduler scheduler.conf into schedulerconf/ if using the multi profile with schedulerconf/	
+
 // Change event-ttl in kube-apiserver if needed.
 
 // Copy config dir from 104 to 306.
