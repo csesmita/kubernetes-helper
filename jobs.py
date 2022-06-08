@@ -56,7 +56,7 @@ def setup(is_central, num_sch):
      
     with open(job_file, 'r') as file :
         job_tmpl = file.read()
-    host = "10.108.14.203"
+    host = "10.110.227.198"
     jobid = 0
 
     # Process workload file

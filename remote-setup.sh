@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo $w1tch#123 | sudo -S apt-get remove -y docker docker-engine docker.io containerd runc
+sudo -S apt-get remove -y docker docker-engine docker.io containerd runc
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
@@ -38,6 +38,7 @@ sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://pack
 echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
-sudo apt-mark hold kubelet kubeadm kubectl
-sudo kubeadm join 128.232.80.13:6443 --token 8fqu93.gd1zbyjva4buivnm --discovery-token-ca-cert-hash sha256:dfbb8d3416e1c063cea27d7ba2ebef7f304025f798c3401b5e92ad223c8c1d43
-pip install redis
+yes | sudo apt-get install redis
+yes | sudo swapoff -a
+sudo rm -rf /etc/containerd/config.toml
+sudo systemctl restart containerd
