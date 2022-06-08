@@ -8,7 +8,7 @@ sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config && kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 
-//If $(id -u) : $(id -g) gives an illegal variable, then run id, and replace these with sv440 and group name, etc.
+//If $ (id -u) : $(id -g) gives an illegal variable, then run id, and replace these with sv440 and group name, etc.
 
 
 (For the following command try =\$w1tch\#123 with no " " if the command fails.)
@@ -18,6 +18,8 @@ kubectl create secret docker-registry regcred --docker-server=https://index.dock
 // Default scheduler - Create /etc/kubernetes/schedulerconf folder and copy in kube-scheduler.conf into it.
 
 // Copy /etc/kubernetes/kube-scheduler scheduler.conf into schedulerconf/ if using the multi profile with schedulerconf/
+
+// Replace kube-scheduler.yaml with kube-scheduler.yaml.multiprofiles and restart default scheduler.
 
 
 kubectl apply -f  my-scheduler.yaml 
