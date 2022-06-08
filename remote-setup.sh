@@ -45,3 +45,4 @@ pip3 install kubernetes
 yes | sudo swapoff -a
 sudo rm -rf /etc/containerd/config.toml
 sudo systemctl restart containerd
+mkdir -p /local/scratch
