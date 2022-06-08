@@ -38,7 +38,10 @@ sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://pack
 echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
-yes | sudo apt-get install redis
+yes | sudo apt-get install python3-pip
+pip3 install redis
+pip3 install numpy
+pip3 install kubernetes
 yes | sudo swapoff -a
 sudo rm -rf /etc/containerd/config.toml
 sudo systemctl restart containerd
