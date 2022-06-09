@@ -5,5 +5,6 @@ for (( i=1; i<=$numnodes; i++ ))
 do
     node="node$i"
     ssh-keyscan $node >> $HOME/.ssh/known_hosts
-    ssh $node "/bin/sh -s" < worker-reset.sh
+    ssh $node "/bin/sh -s" < worker-reset.sh &
 done
+wait
