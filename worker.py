@@ -24,8 +24,9 @@ while not q.empty():
     count = q.complete(item)
     if count == 0:
       print(podname + ": Work finished by some other pod!")
-      sys.exit(podname + ": Work finished by some other pod!")
-    done=True
+      #sys.exit(podname + ": Work finished by some other pod!")
+    else:
+      done=True
     break
   else:
     print(podname + ": Inside else. Queue state: empty=" + str(q.empty()))
@@ -33,9 +34,10 @@ while not q.empty():
     has_expired = q.get_expired()
     if has_expired == False:
       print(podname + ": Nothing to work on, and no expired leases!")
-      sys.exit("Nothing to work on, and no expired leases!")
+      #sys.exit("Nothing to work on, and no expired leases!")
+      break
 if done:
     print(podname + ": Work completed by this task")
 else:
     print(podname + ": Queue empty, so no work done by this task.")
-    sys.exit(podname + ": Queue empty, so no work done by this task.")
+    #sys.exit(podname + ": Queue empty, so no work done by this task.")
