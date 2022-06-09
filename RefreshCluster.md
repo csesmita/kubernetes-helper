@@ -5,9 +5,9 @@ New Cluster Setup Steps -
 1. git clone https://... /kubernetes-helper on the master node. (Node 0) - Generate personal access token and copy into node0 git clone command (password). Cache the key using command - "git config --global credential.helper storage".
 2. Bash remote-setup.sh on master node.
 3. Change node array names in setup-workers.sh. Run it with remote-setup.sh on every worker node.
-4. On master node - sudo kubeadm init --pod-network-cidr=10.244.0.0/16
-5. Add kubeadm join command into worker-reset.sh. Run that using setup-workers.sh
-6. Run RefreshCluster
+4. On master node - sudo kubeadm init --pod-network-cidr=10.244.0.0/16 and the Flannel yml file. 
+5. Add kubeadm join command into worker-reset.sh. Don't run it since it will be run using master.sh.
+6. Run master.sh
 7. Setup distributed logging and docker logging.
 
 
@@ -20,7 +20,7 @@ yes | sudo kubeadm reset && sudo iptables -F && sudo iptables -t nat -F && sudo 
 Master -
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 
-mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config && kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown sv440:decentralizedsch $HOME/.kube/config && kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
 
 //If $ (id -u) : $(id -g) gives an illegal variable, then run id, and replace these with sv440 and group name, etc.
@@ -28,11 +28,11 @@ mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 (For the following command try =\$w1tch\#123 with no " " if the command fails.)
 kubectl create secret docker-registry regcred --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
+edit/main/RefreshCluster.md
 
+// Default scheduler - sudo mkdir -p /etc/kubernetes/schedulerconf folder && sudo cp kube-scheduler.conf /etc/kubernetes/schedulerconf
 
-// Default scheduler - Create /etc/kubernetes/schedulerconf folder and copy in kube-scheduler.conf into it.
-
-// Copy /etc/kubernetes/kube-scheduler scheduler.conf into schedulerconf/ if using the multi profile with schedulerconf/
+// Copy sudo cp /etc/kubernetes/scheduler.conf /etc/kubernetes/schedulerconf/
 
 // Replace kube-scheduler.yaml with kube-scheduler.yaml.multiprofiles and restart default scheduler.
 
