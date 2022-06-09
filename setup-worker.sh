@@ -4,5 +4,6 @@ numnodes=$1
 for (( i=1; i<=$numnodes; i++ ))
 do
     node="node$i"
-    yes | ssh $node "/bin/sh -s" < worker-reset.sh
+    ssh-keyscan $node >> $HOME/.ssh/known_hosts
+    ssh $node "/bin/sh -s" < worker-reset.sh
 done
