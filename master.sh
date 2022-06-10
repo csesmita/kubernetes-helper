@@ -57,7 +57,7 @@ sudo cp syslog-configs/master-node-rsyslog.conf /etc/rsyslog.conf
 sudo systemctl restart rsyslog
 
 #Syslog config - Management
-scp syslog-configs/50-default.conf syslog-configs/management-node-rsyslog.conf node1:
+scp syslog-configs/50-default.conf syslog-configs/management-node-rsyslog.conf YH.tr pods.py pods.sh rediswq.py node1:
 ssh node1 "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp management-node-rsyslog.conf /etc/rsyslog.conf;sudo systemctl restart rsyslog"
 
 #Syslog config - Workers. Starts with 2 since 1 is the management node.

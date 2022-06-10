@@ -38,7 +38,6 @@ def process_pod_scheduling_params(compiled, jobname):
     KUBELET_Q_ADD    = "Added pod to worker queue"
     KUBELET_Q_DELETE = "Ejecting pod from worker queue"
 
-    print("Processing", jobname)
     #Fetch the logs for pods of this job. Result is in jobname.txt
     out = subprocess.check_output(['./pods.sh', jobname, str(job_to_numtasks[jobname])])
     filename=''.join([jobname,'.txt'])
