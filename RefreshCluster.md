@@ -2,13 +2,10 @@
 
 New Cluster Setup Steps -
 
-1. git clone https://... /kubernetes-helper on the master node. (Node 0) - Generate personal access token and copy into node0 git clone command (password). Cache the key using command - "git config --global credential.helper storage".
-2. Bash remote-setup.sh on master node.
-3. Change node array names in setup-workers.sh. Run it with remote-setup.sh on every worker node.
-4. On master node - sudo kubeadm init --pod-network-cidr=10.244.0.0/16 and the Flannel yml file. 
-5. Add kubeadm join command into worker-reset.sh. Don't run it since it will be run using master.sh.
-6. Run master.sh
-7. Setup distributed logging and docker logging.
+1. git clone https://... /kubernetes-helper on the master node. (Node 0) - Generate personal access token and copy into node0 git clone command (password).
+2. cd kubernetes-helper
+3. Run pre-master.sh
+4. Setup distributed logging and docker logging.
 
 
 ### Reset an existing cluster
