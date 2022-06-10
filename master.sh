@@ -21,6 +21,7 @@ read -n 1 -p "Credentials look ok for my-scheduler?"
 
 kubectl patch serviceaccount my-scheduler -n kube-system  -p '{"imagePullSecrets": [{"name": "regcred"}]}'
 
+#Include the management node for now.
 for (( i=1; i<=$numnodes; i++ ))
 do
     node="node$i"
@@ -49,3 +50,21 @@ node1name=$(kubectl get nodes -n kube-system | grep node1.sv440 | awk -F' ' '{pr
 kubectl taint nodes $node1name key1=value1:NoSchedule
 kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
 read -n 1 -p "Verify that no taint has been set on $node1name"
+
+#Syslog config - Master
+sudo cp syslog-configs/50-default.conf /etc/rsyslog.d/
+sudo cp syslog-configs/master-node-rsyslog.conf /etc/rsyslog.conf
+sudo systemctl restart rsyslog
+
+#Syslog config - Management
+scp syslog-configs/50-default.conf syslog-configs/management-node-rsyslog.conf node1:
+ssh node1 "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp management-node-rsyslog.conf /etc/rsyslog.conf;sudo systemctl restart rsyslog"
+
+#Syslog config - Workers. Starts with 2 since 1 is the management node.
+for (( i=2; i<=$numnodes; i++ ))
+do
+    node="node$i"
+    scp syslog-configs/50-default.conf syslog-configs/worker-node-rsyslog.conf $node:
+    ssh $node "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp worker-node-rsyslog.conf /etc/rsyslog.conf; sudo systemctl restart rsyslog"
+done
+wait
