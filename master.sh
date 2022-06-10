@@ -3,7 +3,7 @@ numnodes=$1
 
 cd $HOME/kubernetes-helper
 echo "Current working directory is"
-echo pwd
+pwd
 read -n 1 -p "Ensure directory is set to kubernetes-helper, and that this is node0. Press to continue."
 
 echo "Creating Secret Credentials and Verifying."
@@ -45,7 +45,7 @@ read -n 1 -p "Change Redis IP in files - jobs.py and in job_*.yaml. Press when r
 
 echo "Making node1 the management node."
 scp -r $HOME/.kube/  node1:
-node1name=$(kubectl get nodes -n kube-system | grep node1 | awk -F' ' '{print $1}')
+node1name=$(kubectl get nodes -n kube-system | grep node1.sv440 | awk -F' ' '{print $1}')
 kubectl taint nodes $node1name key1=value1:NoSchedule
 kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
 read -n 1 -p "Verify that no taint has been set on $node1name"

@@ -20,7 +20,6 @@ spec:
     - --enable-admission-plugins=NodeRestriction
     - --enable-bootstrap-token-auth=true
     - --enable-priority-and-fairness=false
-    - --event-ttl=6h0m0s
     - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
     - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
     - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
