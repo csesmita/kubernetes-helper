@@ -1,11 +1,10 @@
 ### Starting a New Cluster
 
 New Cluster Setup Steps -
-
+0. Copy in id_ed* files into node0 so that it can ssh to other nodes. Also copy in .screenrc to node0.
 1. git clone https://... /kubernetes-helper on the master node. (Node 0) - Generate personal access token and copy into node0 git clone command (password).
 2. cd kubernetes-helper
 3. Run pre-master.sh
-4. Setup distributed logging and docker logging.
 
 
 ### Reset an existing cluster
@@ -92,3 +91,4 @@ sudo kubeadm join 128.232.80.13:6443 --token 0qshgj.2y0cyd7xvp1r5i1v \
 
 Additional Notes - 
 1. Syslog is used for logs' shipping. /etc/rsyslog.conf has to be modified for server (to allow logs on udp on port 514) and on the client (to export all syslog.* to caelum-xxx:514). Docker logging config (in /etc/docker/daemon.json) should point to log-driver as syslog. Restart systemctl after changes to rsyslog or docker services. Fluentd, etc not needed.
+2. When starting an experiment, ensure screen and then start the experiment on management node. Else, once network disconnects, the script will stop.
