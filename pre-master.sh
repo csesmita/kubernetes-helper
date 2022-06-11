@@ -14,5 +14,8 @@ echo "Add kubeadm join command into worker-reset.sh. Dont run it since it will b
 read  -n 1 -p "Press any key to enter"
 echo "Enter the number of nodes not including the master node (so, workers + management)"
 read numnodes
+eval `ssh-agent`
+echo "Enter ssh password at the next prompt."
+ssh-add
 bash setup-worker.sh $numnodes
 bash master.sh $numnodes
