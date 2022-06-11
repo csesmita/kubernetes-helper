@@ -5,7 +5,6 @@ New Cluster Setup Steps -
 1. git clone https://... /kubernetes-helper on the master node. (Node 0) - Generate personal access token and copy into node0 git clone command (password).
 2. cd kubernetes-helper
 3. Run pre-master.sh
-4. Setup distributed logging and docker logging.
 
 
 ### Reset an existing cluster
