@@ -49,7 +49,7 @@ scp -r $HOME/.kube/  node1:
 node1name=$(kubectl get nodes -n kube-system | grep node1.sv440 | awk -F' ' '{print $1}')
 kubectl taint nodes $node1name key1=value1:NoSchedule
 kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
-read -n 1 -p "Verify that no taint has been set on $node1name"
+read -n 1 -p "Verify that taint has been set on $node1name"
 
 #Syslog config - Master
 sudo cp syslog-configs/50-default.conf /etc/rsyslog.d/
