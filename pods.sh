@@ -28,7 +28,9 @@ if [ "$#" -eq 2 ]; then
     #For each pod, time sort its logs and write into final file.
     for podname in "${pods[@]}"; do
         #Grep for all logs with podname and sort them.
-        logs=$(LC_ALL=C fgrep $podname $tempfile | sort -k7)
+        #First sort on date and then time.
+        #Kubelet sometimes throws extra logs. If so, prune them out first.
+        logs=$(LC_ALL=C fgrep $podname $tempfile | sed 's/{"cniVersion".*}//' | sort -k6,7)
         echo "Logs for $podname" >> $filename
         echo "$logs" >> $filename
     done
