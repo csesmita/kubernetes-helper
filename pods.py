@@ -18,7 +18,7 @@ node_to_pod_count = collections.defaultdict(int)
 default_time = timedelta(microseconds=0)
 
 def extractDateTime(timestr):
-    return datetime.strptime(timestr,'%H:%M:%S.%f')
+    return datetime.strptime(timestr,'%m%d %H:%M:%S.%f')
 
 # Returns difference in two timedeltas in seconds
 def timeDiff(e1, s1):
@@ -50,10 +50,14 @@ def process_pod_scheduling_params(compiled, jobname):
             if "Logs for" in log:
                 if len(podname) > 0:
                     print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Kubelet Queue Time", kubelet_queue_time, "Node", nodename)
+                    #Some sanity checking here.
+                    if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
+                        print("Calculations for " + podname + " might need a re-check.")
+                        discarded = True
                     qtime = timeDiff(queue_time, default_time)
                     algotime = timeDiff(scheduling_algorithm_time, default_time)
                     kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-                    return_results.append((nodename, qtime, algotime, kubeletqtime))
+                    return_results.append((nodename, qtime, algotime, kubeletqtime, discarded))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
                 kubelet_queue_time = timedelta(microseconds=0)
@@ -66,6 +70,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 attempt_bind_time = datetime.min
                 kubelet_queue_add_time = datetime.min
                 kubelet_queue_eject_time = datetime.min
+                discarded = False
                 nodename=''
                 podname = log.split()[2]
                 continue
@@ -85,7 +90,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 if start_sch_time > datetime.min:
                     print("--------Check calculcations for pod for start sch time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
+                    discarded = True
                     break
                 start_sch_time = extractDateTime(compiled.search(log).group(0))
                 continue
@@ -94,7 +99,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     # This happens if some logs failed to make it to the distributed logging service.
                     print("--------Check calculcations for pod for unschedulable pod time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
+                    discarded = True
                     break
                 unable_sch_time = extractDateTime(compiled.search(log).group(0))
                 scheduling_algorithm_time = scheduling_algorithm_time + unable_sch_time - start_sch_time
@@ -106,7 +111,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     # This happens if some logs failed to make it to the distributed logging service.
                     print("---------Check calculcations for pod for bind time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
+                    discarded = True
                     break
                 attempt_bind_time = extractDateTime(compiled.search(log).group(0))
                 scheduling_algorithm_time = scheduling_algorithm_time + attempt_bind_time - start_sch_time
@@ -117,7 +122,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 if kubelet_queue_add_time > datetime.min:
                     print("--------Check calculcations for pod for kubelet queue add time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
-                    pods_discarded += 1
+                    discarded = True
                     break
                 kubelet_queue_add_time = extractDateTime(compiled.search(log).group(0))
                 continue
@@ -130,15 +135,26 @@ def process_pod_scheduling_params(compiled, jobname):
 def complete_processing(results):
     global node_to_pod_count, qtimes, algotimes, kubeletqtimes
     for r in results:
-        # r = (nodename, qtime, algotime, kubeletqtime)
+        # r = (nodename, qtime, algotime, kubeletqtime, discarded)
+        if r[4] == True:
+            pods_discarded += 1
+            continue
         node_to_pod_count[r[0]] += 1
         qtimes.append(r[1])
         algotimes.append(r[2])
         kubeletqtimes.append(r[3])
 
 def process():
-    #Look for 12:14:58.422793 pattern in logs
-    pattern = '\d{2}:\d{2}:\d{2}\.\d{6}'
+    #https://github.com/kubernetes/klog/blob/main/klog.go#642
+    #Log lines have this form:
+    #    Lmmdd hh:mm:ss.uuuuuu threadid file:line] msg...
+    #where the fields are defined as follows:
+    #    L                A single character, representing the log level (eg 'I' for INFO)
+    #    mm               The month (zero padded; ie May is '05')
+    #    dd               The day (zero padded)
+    #    hh:mm:ss.uuuuuu  Time in hours, minutes and fractional seconds
+    #Look for Lmmdd hh:mm:ss.uuuuuu pattern in logs
+    pattern = '\d{2}\d{2} \d{2}:\d{2}:\d{2}\.\d{6}'
     compiled = re.compile(pattern)
     
     # Process workload file to get num tasks for each job
