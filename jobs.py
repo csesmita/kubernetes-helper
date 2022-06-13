@@ -56,7 +56,7 @@ def setup(is_central, num_sch):
      
     with open(job_file, 'r') as file :
         job_tmpl = file.read()
-    host = "10.110.227.198"
+    host = "10.108.14.203"
     jobid = 0
 
     # Process workload file
@@ -171,7 +171,10 @@ def stats(num_processes):
 def stitch_partial_results(partial_results):
     global jrt
     partial_jrt = partial_results[0]
-    jrt = jrt + partial_jrt
+    if isinstance(partial_jrt, list):
+        jrt = jrt + partial_jrt
+    else:
+        raise Exception("Got return result from process as", partial_jrt)
 
 def get_job_and_pod_events():
     # Watch for completed jobs.
