@@ -102,6 +102,10 @@ def main():
         print("Incorrect number of parameters. Usage: python jobs.py d 10 -e")
         sys.exit(1)
 
+    confirm=input("Has a screen been started? Type yes if so.")
+    if confirm!="yes":
+        sys.exit(1)
+
     is_central = sys.argv[1] == 'c'
     num_sch = int(sys.argv[2])
     max_job_id = setup(is_central, num_sch)
