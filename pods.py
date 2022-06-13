@@ -49,7 +49,6 @@ def process_pod_scheduling_params(compiled, jobname):
         for log in f:
             if "Logs for" in log:
                 if len(podname) > 0:
-                    print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Kubelet Queue Time", kubelet_queue_time, "Node", nodename)
                     #Some sanity checking here.
                     if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
                         print("Calculations for " + podname + " might need a re-check.")
@@ -57,7 +56,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     qtime = timeDiff(queue_time, default_time)
                     algotime = timeDiff(scheduling_algorithm_time, default_time)
                     kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-                    return_results.append((nodename, qtime, algotime, kubeletqtime, discarded))
+                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
                 kubelet_queue_time = timedelta(microseconds=0)
@@ -135,14 +134,21 @@ def process_pod_scheduling_params(compiled, jobname):
 def complete_processing(results):
     global node_to_pod_count, qtimes, algotimes, kubeletqtimes
     for r in results:
-        # r = (nodename, qtime, algotime, kubeletqtime, discarded)
-        if r[4] == True:
+        # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded)
+        podname = r[0]
+        nodename = r[1]
+        qtime = r[2]
+        algotime = r[3]
+        kubeletqtime = r[4]
+        discarded = r[5]
+        if discarded == True:
             pods_discarded += 1
             continue
-        node_to_pod_count[r[0]] += 1
-        qtimes.append(r[1])
-        algotimes.append(r[2])
-        kubeletqtimes.append(r[3])
+        node_to_pod_count[nodename] += 1
+        qtimes.append(qtime)
+        algotimes.append(algotime)
+        kubeletqtimes.append(kubeletqtime)
+        print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Kubelet Queue Time", kubeletqtime, "Node", nodename)
 
 def process():
     #https://github.com/kubernetes/klog/blob/main/klog.go#642

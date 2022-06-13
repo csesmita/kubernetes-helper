@@ -27,7 +27,7 @@ chunks = Queue()
 job_start_time = {}
 max_job_id = 0
 #Stats printed out.
-pods_discarded = 0
+job_to_jrt = {}
 jrt = []
 qtimes = []
 algotimes = []
@@ -148,11 +148,12 @@ def setup_chunks():
 
 #For this worker process, setup some process variables.
 def init_process(q, num_jobs, num_processes):
-    global all_jobs_jobwatch, jrt
+    global all_jobs_jobwatch, jrt, job_to_jrt
     start =  q.get()
     # Global values to be used within the process.
     all_jobs_jobwatch = [''.join(["job",str(n)]) for n in range(start, num_jobs + 1, num_processes)]
     jrt = []
+    job_to_jrt = {}
 
 # Start the worker processes to catch job completion events.
 def stats(num_processes):
@@ -170,9 +171,11 @@ def stats(num_processes):
 
 def stitch_partial_results(partial_results):
     global jrt
-    partial_jrt = partial_results[0]
+    partial_jrt, partial_job_to_jrt = partial_results[0]
     if isinstance(partial_jrt, list):
         jrt = jrt + partial_jrt
+        for jobname, job_completion in partial_job_to_jrt.items():
+            print("Job", jobname, "has JRT", job_completion)
     else:
         raise Exception("Got return result from process as", partial_jrt)
 
@@ -203,8 +206,8 @@ def process_job_object(job_object, job_client, last_resource_version):
     # Process the completion time of the job to calculate its JRT.
     completed_sec_from_epoch = (status.completion_time.replace(tzinfo=None) - datetime(1970,1,1)).total_seconds()
     job_completion = completed_sec_from_epoch - job_start_time[jobname]
-    print("Job", jobname, "has JRT", job_completion, "v=",last_resource_version)
     jrt.append(job_completion)
+    job_to_jrt[jobname] = job_completion
     all_jobs_jobwatch.remove(jobname)
     job_client.delete_namespaced_job(name=jobname, namespace="default",
         body=client.V1DeleteOptions(
@@ -241,7 +244,7 @@ async def process_completed_jobs(job_client):
             for job_object in job_events.items:
                 is_return = process_job_object(job_object, job_client, last_resource_version)
                 if is_return:
-                    return jrt
+                    return jrt, job_to_jrt
         #print("Jobs watch yields")
         await asyncio.sleep(0)
         job_events, e = await get_job_events(job_client,limit, continue_param, timeout_seconds, last_resource_version)
