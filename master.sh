@@ -13,8 +13,8 @@ read -n 1 -p "Credentials look ok?"
 sudo mkdir -p /etc/kubernetes/schedulerconf && sudo cp kube-scheduler.conf /etc/kubernetes/schedulerconf && sudo cp /etc/kubernetes/scheduler.conf /etc/kubernetes/schedulerconf/
 sudo mv /etc/kubernetes/manifests/kube-scheduler.yaml /tmp && sudo cp kube-scheduler.yaml.multiprofiles /etc/kubernetes/manifests/kube-scheduler.yaml
 
-read -n 1 -p "Copy in API server paramteres and restart. Press any key when ready"
-read -n 1 -p "Check API server is up using kubectl get pods -n kube-system | grep apiserver"
+read -n 1 -p "Copy in API server and Kube Controller Manager paramteres and restart. Press any key when ready"
+read -n 1 -p "Check API server and Controller are up using kubectl get pods -n kube-system | grep apiserver"
 
 kubectl apply -f  my-scheduler.yaml && kubectl create secret docker-registry regcred -n kube-system --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password=\$w1tch#123 --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred -n kube-system --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode
 read -n 1 -p "Credentials look ok for my-scheduler?"
