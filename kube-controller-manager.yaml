@@ -21,7 +21,7 @@ spec:
     - --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt
     - --cluster-signing-key-file=/etc/kubernetes/pki/ca.key
     - --controllers=*,bootstrapsigner,tokencleaner
-    - --feature-gate=JobTrackingFinalizer=true
+    - --feature-gates=JobTrackingWithFinalizers=true
     - --kubeconfig=/etc/kubernetes/controller-manager.conf
     - --leader-elect=true
     - --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
