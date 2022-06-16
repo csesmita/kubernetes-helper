@@ -7,6 +7,7 @@ import sys
 import subprocess
 from multiprocessing import Pool
 from time import time
+import os
 
 job_to_numtasks = {}
 #Stats printed out.
@@ -37,14 +38,16 @@ def process_pod_scheduling_params(compiled, jobname):
     BIND_LOG         = "Attempting to bind pod to node"
     KUBELET_Q_ADD    = "Added pod to worker queue"
     KUBELET_Q_DELETE = "Ejecting pod from worker queue"
+    # This log comes from the pod image.
+    EXECUTION_LOG    = "Working on"
 
     #Fetch the logs for pods of this job. Result is in jobname.txt
-    out = subprocess.check_output(['./pods.sh', jobname, str(job_to_numtasks[jobname])])
+    out = subprocess.check_output(['bash', 'pods.sh', jobname, str(job_to_numtasks[jobname])])
     filename=''.join([jobname,'.txt'])
 
+    return_results = []
     with open(filename, 'r') as f:
         # Fetch all pod related stats for each pod.
-        return_results = []
         podname=""
         for log in f:
             if "Logs for" in log:
@@ -56,7 +59,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     qtime = timeDiff(queue_time, default_time)
                     algotime = timeDiff(scheduling_algorithm_time, default_time)
                     kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded))
+                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
                 kubelet_queue_time = timedelta(microseconds=0)
@@ -69,6 +72,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 attempt_bind_time = datetime.min
                 kubelet_queue_add_time = datetime.min
                 kubelet_queue_eject_time = datetime.min
+                execution_time = 0.0
                 discarded = False
                 nodename=''
                 podname = log.split()[2]
@@ -115,7 +119,8 @@ def process_pod_scheduling_params(compiled, jobname):
                 attempt_bind_time = extractDateTime(compiled.search(log).group(0))
                 scheduling_algorithm_time = scheduling_algorithm_time + attempt_bind_time - start_sch_time
                 start_sch_time = datetime.min
-                nodename = log.split('node=')[1]
+                #This log line has an extranous "\n" at the end, so remove that.
+                nodename = log.split('node=')[1].split()[0]
                 continue
             if KUBELET_Q_ADD in log:
                 if kubelet_queue_add_time > datetime.min:
@@ -129,18 +134,24 @@ def process_pod_scheduling_params(compiled, jobname):
                 kubelet_queue_eject_time = extractDateTime(compiled.search(log).group(0))
                 kubelet_queue_time = kubelet_queue_eject_time - kubelet_queue_add_time
                 continue
+            if EXECUTION_LOG in log:
+                # Working on 19.458. Extract the last field in the line.
+                execution_time = float(log.split()[-1])
+                continue
+    os.remove(filename)
     return return_results
 
 def complete_processing(results):
     global node_to_pod_count, qtimes, algotimes, kubeletqtimes
     for r in results:
-        # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded)
+        # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time)
         podname = r[0]
         nodename = r[1]
         qtime = r[2]
         algotime = r[3]
         kubeletqtime = r[4]
         discarded = r[5]
+        execution_time = r[6]
         if discarded == True:
             pods_discarded += 1
             continue
@@ -148,7 +159,7 @@ def complete_processing(results):
         qtimes.append(qtime)
         algotimes.append(algotime)
         kubeletqtimes.append(kubeletqtime)
-        print("Pod", podname, "- Scheduler Queue Time", queue_time,"Scheduling Algorithm Time", scheduling_algorithm_time, "Kubelet Queue Time", kubeletqtime, "Node", nodename)
+        print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time)
 
 def process():
     #https://github.com/kubernetes/klog/blob/main/klog.go#642
