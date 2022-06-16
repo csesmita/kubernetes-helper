@@ -7,3 +7,10 @@ kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no
 echo "Number of pods still around = "
 kubectl get pods| wc -l
 echo "Check syslog is fine."
+echo "Enter the ID of the last worker nodes"
+read numnodes
+for (( i=2; i<=$numnodes; i++ ))
+do
+    node="node$i"
+    ssh $node "/bin/sh -s" < clear_logs.sh
+done
