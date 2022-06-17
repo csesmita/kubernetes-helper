@@ -54,7 +54,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 if len(podname) > 0:
                     #Some sanity checking here.
                     if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
-                        print("--------Check calculcations for pod", podname)
+                        print("--------Check calculations for pod", podname)
                         discarded = True
                     qtime = timeDiff(queue_time, default_time)
                     algotime = timeDiff(scheduling_algorithm_time, default_time)
@@ -81,7 +81,7 @@ def process_pod_scheduling_params(compiled, jobname):
             if QUEUE_ADD_LOG in log:
                 if queue_add_time > datetime.min:
                     # This happens if some logs failed to make it to the distributed logging service.
-                    print("--------Check calculcations for pod for queue add time", podname)
+                    print("--------Check calculations for pod for queue add time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
                     break
@@ -91,7 +91,7 @@ def process_pod_scheduling_params(compiled, jobname):
             if QUEUE_DELETE_LOG in log:
                 if queue_add_time == datetime.min:
                     # This happens if some logs failed to make it to the distributed logging service.
-                    print("--------Check calculcations for pod for queue delete time", podname)
+                    print("--------Check calculations for pod for queue delete time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
                     break
@@ -120,7 +120,7 @@ def process_pod_scheduling_params(compiled, jobname):
             if BIND_LOG in log:
                 if start_sch_time == datetime.min:
                     # This happens if some logs failed to make it to the distributed logging service.
-                    print("---------Check calculcations for pod for bind time", podname)
+                    print("---------Check calculations for pod for bind time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
                     break
@@ -132,7 +132,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 continue
             if KUBELET_Q_ADD in log:
                 if kubelet_queue_add_time > datetime.min:
-                    print("--------Check calculcations for pod for kubelet queue add time", podname)
+                    print("--------Check calculations for pod for kubelet queue add time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
                     break
@@ -141,7 +141,7 @@ def process_pod_scheduling_params(compiled, jobname):
             if KUBELET_Q_DELETE in log:
                 if kubelet_queue_add_time == datetime.min:
                     # This happens if some logs failed to make it to the distributed logging service.
-                    print("---------Check calculcations for pod for kubelet delete time", podname)
+                    print("---------Check calculations for pod for kubelet delete time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
                     break
@@ -156,7 +156,7 @@ def process_pod_scheduling_params(compiled, jobname):
         if len(podname) > 0:
             #Some sanity checking here.
             if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
-                print("--------Check calculcations for pod", podname)
+                print("--------Check calculations for pod", podname)
                 discarded = True
             qtime = timeDiff(queue_time, default_time)
             algotime = timeDiff(scheduling_algorithm_time, default_time)
