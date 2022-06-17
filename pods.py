@@ -54,7 +54,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 if len(podname) > 0:
                     #Some sanity checking here.
                     if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
-                        print("Calculations for " + podname + " might need a re-check.")
+                        print("--------Check calculcations for pod", podname)
                         discarded = True
                     qtime = timeDiff(queue_time, default_time)
                     algotime = timeDiff(scheduling_algorithm_time, default_time)
@@ -80,30 +80,38 @@ def process_pod_scheduling_params(compiled, jobname):
             #This log happens exactly once
             if QUEUE_ADD_LOG in log:
                 if queue_add_time > datetime.min:
-                    raise AssertionError("--------Check calculcations for pod for queue add time"+ podname)
+                    # This happens if some logs failed to make it to the distributed logging service.
+                    print("--------Check calculcations for pod for queue add time", podname)
+                    #Skip this pod's scheduling queue and algorithm time calculations.
+                    discarded = True
+                    break
                 queue_add_time = extractDateTime(compiled.search(log).group(0))
                 continue
             #This log happens exactly once
             if QUEUE_DELETE_LOG in log:
+                if queue_add_time == datetime.min:
+                    # This happens if some logs failed to make it to the distributed logging service.
+                    print("--------Check calculcations for pod for queue delete time", podname)
+                    #Skip this pod's scheduling queue and algorithm time calculations.
+                    discarded = True
+                    break
                 queue_eject_time = extractDateTime(compiled.search(log).group(0))
                 #print("Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time)
                 queue_time = queue_eject_time - queue_add_time
                 continue
             if START_SCH_LOG in log:
-                if start_sch_time > datetime.min:
-                    print("--------Check calculcations for pod for start sch time", podname)
-                    #Skip this pod's scheduling queue and algorithm time calculations.
-                    discarded = True
-                    break
+                # if start_sch_time > datetime.min:
+                # This happens if some logs failed to make it to the distributed logging service.
+                # Since this log may occur multiple times, overwrite with this value.
+                # Skip the previous log time and overwrite with this one.
                 start_sch_time = extractDateTime(compiled.search(log).group(0))
                 continue
             if UNABLE_SCH_LOG in log:
                 if start_sch_time == datetime.min:
                     # This happens if some logs failed to make it to the distributed logging service.
-                    print("--------Check calculcations for pod for unschedulable pod time", podname)
-                    #Skip this pod's scheduling queue and algorithm time calculations.
-                    discarded = True
-                    break
+                    # Since this log may occur multiple times, skip this new value.
+                    # Skip this datapoint in pod's scheduling time calculation.
+                    continue
                 unable_sch_time = extractDateTime(compiled.search(log).group(0))
                 scheduling_algorithm_time = scheduling_algorithm_time + unable_sch_time - start_sch_time
                 start_sch_time = datetime.min
@@ -131,6 +139,12 @@ def process_pod_scheduling_params(compiled, jobname):
                 kubelet_queue_add_time = extractDateTime(compiled.search(log).group(0))
                 continue
             if KUBELET_Q_DELETE in log:
+                if kubelet_queue_add_time == datetime.min:
+                    # This happens if some logs failed to make it to the distributed logging service.
+                    print("---------Check calculcations for pod for kubelet delete time", podname)
+                    #Skip this pod's scheduling queue and algorithm time calculations.
+                    discarded = True
+                    break
                 kubelet_queue_eject_time = extractDateTime(compiled.search(log).group(0))
                 kubelet_queue_time = kubelet_queue_eject_time - kubelet_queue_add_time
                 continue
@@ -138,6 +152,17 @@ def process_pod_scheduling_params(compiled, jobname):
                 # Working on 19.458. Extract the last field in the line.
                 execution_time = float(log.split()[-1])
                 continue
+        #For the last pod in file.
+        if len(podname) > 0:
+            #Some sanity checking here.
+            if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
+                print("--------Check calculcations for pod", podname)
+                discarded = True
+            qtime = timeDiff(queue_time, default_time)
+            algotime = timeDiff(scheduling_algorithm_time, default_time)
+            kubeletqtime = timeDiff(kubelet_queue_time, default_time)
+            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time))
+
     os.remove(filename)
     return return_results
 
@@ -183,7 +208,6 @@ def process():
         jobid += 1
         jobstr = "".join(["job",str(jobid)])
         job_to_numtasks[jobstr]=num_tasks
-        #process_pod_scheduling_params(compiled, jobstr)
 
     with Pool() as p:
         results=[]
