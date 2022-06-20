@@ -52,13 +52,14 @@ def process_pod_scheduling_params(compiled, jobname):
         for log in f:
             if "Logs for" in log:
                 if len(podname) > 0:
-                    #Some sanity checking here.
-                    if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
-                        print("--------Check calculations for pod", podname)
-                        discarded = True
-                    qtime = timeDiff(queue_time, default_time)
-                    algotime = timeDiff(scheduling_algorithm_time, default_time)
-                    kubeletqtime = timeDiff(kubelet_queue_time, default_time)
+                    if not discarded:
+                        #Some sanity checking here.
+                        if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
+                            print("--------Check calculations for pod", podname)
+                            discarded = True
+                        qtime = timeDiff(queue_time, default_time)
+                        algotime = timeDiff(scheduling_algorithm_time, default_time)
+                        kubeletqtime = timeDiff(kubelet_queue_time, default_time)
                     return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
@@ -77,6 +78,9 @@ def process_pod_scheduling_params(compiled, jobname):
                 nodename=''
                 podname = log.split()[2]
                 continue
+            # Discard all lines till the next pod.
+            if discarded:
+                continue
             #This log happens exactly once
             if QUEUE_ADD_LOG in log:
                 if queue_add_time > datetime.min:
@@ -84,7 +88,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     print("--------Check calculations for pod for queue add time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
-                    break
+                    continue
                 queue_add_time = extractDateTime(compiled.search(log).group(0))
                 continue
             #This log happens exactly once
@@ -94,7 +98,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     print("--------Check calculations for pod for queue delete time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
-                    break
+                    continue
                 queue_eject_time = extractDateTime(compiled.search(log).group(0))
                 #print("Node", nodename,"Pod", podname,"Started", queue_add_time, "ended at", queue_eject_time)
                 queue_time = queue_eject_time - queue_add_time
@@ -123,7 +127,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     print("---------Check calculations for pod for bind time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
-                    break
+                    continue
                 attempt_bind_time = extractDateTime(compiled.search(log).group(0))
                 scheduling_algorithm_time = scheduling_algorithm_time + attempt_bind_time - start_sch_time
                 start_sch_time = datetime.min
@@ -135,7 +139,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     print("--------Check calculations for pod for kubelet queue add time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
-                    break
+                    continue
                 kubelet_queue_add_time = extractDateTime(compiled.search(log).group(0))
                 continue
             if KUBELET_Q_DELETE in log:
@@ -144,7 +148,7 @@ def process_pod_scheduling_params(compiled, jobname):
                     print("---------Check calculations for pod for kubelet delete time", podname)
                     #Skip this pod's scheduling queue and algorithm time calculations.
                     discarded = True
-                    break
+                    continue
                 kubelet_queue_eject_time = extractDateTime(compiled.search(log).group(0))
                 kubelet_queue_time = kubelet_queue_eject_time - kubelet_queue_add_time
                 continue
@@ -154,22 +158,25 @@ def process_pod_scheduling_params(compiled, jobname):
                 continue
         #For the last pod in file.
         if len(podname) > 0:
-            #Some sanity checking here.
-            if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
-                print("--------Check calculations for pod", podname)
-                discarded = True
-            qtime = timeDiff(queue_time, default_time)
-            algotime = timeDiff(scheduling_algorithm_time, default_time)
-            kubeletqtime = timeDiff(kubelet_queue_time, default_time)
+            if not discarded:
+                #Some sanity checking here.
+                if queue_time.days > 0 or scheduling_algorithm_time.days > 0 or kubelet_queue_time.days > 0:
+                    print("--------Check calculations for pod", podname)
+                    discarded = True
+                qtime = timeDiff(queue_time, default_time)
+                algotime = timeDiff(scheduling_algorithm_time, default_time)
+                kubeletqtime = timeDiff(kubelet_queue_time, default_time)
             return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time))
 
     os.remove(filename)
     return return_results
 
 def complete_processing(results):
-    global node_to_pod_count, qtimes, algotimes, kubeletqtimes
+    global node_to_pod_count, qtimes, algotimes, kubeletqtimes, pods_discarded
+    count = 0
     for r in results:
         # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time)
+        count += 1
         podname = r[0]
         nodename = r[1]
         qtime = r[2]
@@ -185,6 +192,9 @@ def complete_processing(results):
         algotimes.append(algotime)
         kubeletqtimes.append(kubeletqtime)
         print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time)
+    jobname = (results[0])[0].split("-")[0]
+    if count < job_to_numtasks[jobname]:
+        print("Job", jobname, "only has", count,"pods while the file enumerates", job_to_numtasks[jobname])
 
 def process():
     #https://github.com/kubernetes/klog/blob/main/klog.go#642
