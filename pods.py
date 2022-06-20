@@ -75,7 +75,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 kubelet_queue_eject_time = datetime.min
                 execution_time = 0.0
                 discarded = False
-                nodename=''
+                nodename="None"
                 podname = log.split()[2]
                 continue
             # Discard all lines till the next pod.
