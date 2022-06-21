@@ -12,5 +12,6 @@ read numnodes
 for (( i=2; i<=$numnodes; i++ ))
 do
     node="node$i"
-    ssh $node "/bin/sh -s" < clear_logs.sh
+    ssh $node "/bin/sh -s" < clear_logs.sh &
 done
+wait
