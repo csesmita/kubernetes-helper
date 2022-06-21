@@ -65,6 +65,6 @@ for (( i=2; i<=$numnodes; i++ ))
 do
     node="node$i"
     scp syslog-configs/50-default.conf syslog-configs/worker-node-rsyslog.conf $node:
-    ssh $node "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp worker-node-rsyslog.conf /etc/rsyslog.conf; sudo systemctl restart rsyslog"
+    ssh $node "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp worker-node-rsyslog.conf /etc/rsyslog.conf; sudo systemctl restart rsyslog" &
 done
 wait
