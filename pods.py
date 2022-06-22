@@ -16,6 +16,7 @@ qtimes = []
 algotimes = []
 kubeletqtimes = []
 node_to_pod_count = collections.defaultdict(int)
+scheduling_cycles_per_pod=[]
 default_time = timedelta(microseconds=0)
 
 def extractDateTime(timestr):
@@ -60,7 +61,7 @@ def process_pod_scheduling_params(compiled, jobname):
                         qtime = timeDiff(queue_time, default_time)
                         algotime = timeDiff(scheduling_algorithm_time, default_time)
                         kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time))
+                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
                 kubelet_queue_time = timedelta(microseconds=0)
@@ -75,7 +76,9 @@ def process_pod_scheduling_params(compiled, jobname):
                 kubelet_queue_eject_time = datetime.min
                 execution_time = 0.0
                 discarded = False
-                nodename=''
+                nodename="None"
+                # Atleast 1 scheduling cycle per pod.
+                scheduling_cycles = 1
                 podname = log.split()[2]
                 continue
             # Discard all lines till the next pod.
@@ -119,6 +122,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 unable_sch_time = extractDateTime(compiled.search(log).group(0))
                 scheduling_algorithm_time = scheduling_algorithm_time + unable_sch_time - start_sch_time
                 start_sch_time = datetime.min
+                scheduling_cycles += 1
                 continue
             #This log happens exactly once
             if BIND_LOG in log:
@@ -166,32 +170,34 @@ def process_pod_scheduling_params(compiled, jobname):
                 qtime = timeDiff(queue_time, default_time)
                 algotime = timeDiff(scheduling_algorithm_time, default_time)
                 kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time))
+            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles))
 
     os.remove(filename)
     return return_results
 
 def complete_processing(results):
-    global node_to_pod_count, qtimes, algotimes, kubeletqtimes, pods_discarded
+    global node_to_pod_count, qtimes, algotimes, kubeletqtimes, pods_discarded, scheduling_cycles_per_pod
     count = 0
     for r in results:
-        # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time)
+        # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles)
+        discarded = r[5]
+        if discarded == True:
+            pods_discarded += 1
+            continue
         count += 1
         podname = r[0]
         nodename = r[1]
         qtime = r[2]
         algotime = r[3]
         kubeletqtime = r[4]
-        discarded = r[5]
         execution_time = r[6]
-        if discarded == True:
-            pods_discarded += 1
-            continue
+        scheduling_cycles = r[7]
         node_to_pod_count[nodename] += 1
         qtimes.append(qtime)
         algotimes.append(algotime)
         kubeletqtimes.append(kubeletqtime)
-        print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time)
+        scheduling_cycles_per_pod.append(scheduling_cycles)
+        print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles)
     jobname = (results[0])[0].split("-")[0]
     if count < job_to_numtasks[jobname]:
         print("Job", jobname, "only has", count,"pods while the file enumerates", job_to_numtasks[jobname])
@@ -232,11 +238,11 @@ def post_process():
     node_to_pods = list(dict(sorted(node_to_pod_count.items(), key=lambda item: item[1])).values())
     print("Total number of pods evaluated", len(qtimes))
     print("Stats for Scheduler Queue Times -",percentile(qtimes, 50), percentile(qtimes, 90), percentile(qtimes, 99))
-    print("Stats for Scheduler Algorithm Times -"",",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99))
+    print("Stats for Scheduler Algorithm Times -",percentile(algotimes, 50), percentile(algotimes, 90), percentile(algotimes, 99))
     print("Stats for Kubelet Queue Times -",percentile(kubeletqtimes, 50), percentile(kubeletqtimes, 90), percentile(kubeletqtimes, 99))
-    print("Count of pods on nodes", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99))
-    percent_discarded = pods_discarded / (pods_discarded + len(qtimes)) * 100
-    print("Pods discarded is", pods_discarded, "and that is", percent_discarded, "% of all pods")
+    print("Count of pods on nodes -", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99))
+    print("Stats for number of scheduling cycles per pod -", percentile(scheduling_cycles_per_pod, 50), percentile(scheduling_cycles_per_pod, 90), percentile(scheduling_cycles_per_pod, 99))
+    print("Pods discarded is", pods_discarded)
 
 #Process pod stats.    
 start_time = time()
