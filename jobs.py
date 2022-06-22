@@ -6,6 +6,7 @@ import subprocess
 import asyncio
 from datetime import timedelta, datetime
 from time import sleep, time, mktime
+from threading import Timer
 from numpy import percentile
 from random import randint
 import collections
@@ -37,6 +38,15 @@ scheduler_to_algotimes = collections.defaultdict(int)
 
 config.load_kube_config()
 k8s_client = client.ApiClient()
+
+
+UTIL_LOG_INTERVAL = 300
+UTIL_LOG_NAME = "node_utilization.txt"
+def log_node_util():
+    #print out to file
+    with open(UTIL_LOG_NAME, "a+") as f:
+        subprocess.run(["kubectl", "top", "nodes", "--sort-by", "cpu"], stdout=f)
+    Timer(UTIL_LOG_INTERVAL, log_node_util).start()
 
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
@@ -132,6 +142,9 @@ def main():
         print("Starting", jobstr, "at", job_start_time[jobstr] - start_epoch)
 
     f.close()
+
+    #Start logging node utilization
+    log_node_util()
 
     #Process scheduler stats.    
     stats(num_processes)
