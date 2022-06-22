@@ -64,7 +64,13 @@ ssh node1 "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp management-node-rsys
 for (( i=2; i<=$numnodes; i++ ))
 do
     node="node$i"
-    scp syslog-configs/50-default.conf syslog-configs/worker-node-rsyslog.conf $node:
+    scp syslog-configs/50-default.conf syslog-configs/worker-node-rsyslog.conf $node: &
+done
+wait
+
+for (( i=2; i<=$numnodes; i++ ))
+do
+    node="node$i"
     ssh $node "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp worker-node-rsyslog.conf /etc/rsyslog.conf; sudo systemctl restart rsyslog" &
 done
 wait
