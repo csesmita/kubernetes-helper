@@ -37,7 +37,7 @@ sudo apt-get install -y apt-transport-https ca-certificates curl
 sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
 echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update
-sudo apt-get install -y kubelet=1.23.1-00 kubectl=1.23.1-00 kubeadm=1.23.1-00
+sudo apt-get install -y kubelet=1.23.6-00 kubectl=1.23.6-00 kubeadm=1.23.6-00
 yes | sudo apt-get install python3-pip
 pip3 install redis
 pip3 install numpy
