@@ -46,3 +46,4 @@ yes | sudo swapoff -a
 sudo rm -rf /etc/containerd/config.toml
 sudo systemctl restart containerd
 sudo mkdir -p /local/scratch
+sudo chmod -R 777 /local/scratch
