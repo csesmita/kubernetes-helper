@@ -46,7 +46,6 @@ def log_node_util():
     #print out to file
     with open(UTIL_LOG_NAME, "a+") as f:
         subprocess.run(["kubectl", "top", "nodes", "--sort-by", "cpu"], stdout=f)
-    Timer(UTIL_LOG_INTERVAL, log_node_util).start()
 
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
@@ -144,10 +143,12 @@ def main():
     f.close()
 
     #Start logging node utilization
-    log_node_util()
+    t = Timer(UTIL_LOG_INTERVAL, log_node_util)
+    t. start()
 
     #Process scheduler stats.    
     stats(num_processes)
+    t.cancel()
     print("Script took a total of", time() - start_epoch,"s")
 
 #Set up job allocation for worker processes.
