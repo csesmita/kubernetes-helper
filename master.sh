@@ -16,6 +16,8 @@ sudo mv /etc/kubernetes/manifests/kube-scheduler.yaml /tmp && sudo mv /etc/kuber
 read -n 1 -p "Copy in API server, Kube Controller Manager, Kube Scheduler (from kube-scheduler.yaml.multiprofiles) and ETCD paramteres and restart. Also check image details are 1.23.6. Press any key when ready."
 read -n 1 -p "Check API server, etc are up using kubectl get pods -n kube-system | grep apiserver"
 
+kubectl apply -f cpu-defaults.yaml --namespace=default
+
 kubectl apply -f  my-scheduler.yaml && kubectl create secret docker-registry regcred -n kube-system --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password=\$w1tch#123 --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred -n kube-system --output="jsonpath={.data.\.dockerconfigjson}" | base64 --decode
 read -n 1 -p "Credentials look ok for my-scheduler?"
 
