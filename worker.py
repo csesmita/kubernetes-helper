@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-import time
+import subprocess
 import rediswq
 import os
-import sys
 
 host = os.getenv("REDIS_SERVICE_HOST")
 jobid = os.getenv("JOBID")
@@ -19,7 +18,7 @@ while not q.empty():
   if item is not None:
     itemstr = item.decode("utf-8")
     print(podname + ": Working on " + itemstr)
-    time.sleep(float(itemstr))
+    subprocess.run(["timeout", itemstr, "sha1sum", "/dev/zero"])
     print(podname + ": Finished sleeping for " + itemstr)
     count = q.complete(item)
     if count == 0:
