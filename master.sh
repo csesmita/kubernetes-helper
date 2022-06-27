@@ -76,3 +76,6 @@ do
     ssh $node "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp worker-node-rsyslog.conf /etc/rsyslog.conf; sudo systemctl restart rsyslog" &
 done
 wait
+
+echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/"
+echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods."
