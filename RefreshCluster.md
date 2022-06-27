@@ -3,7 +3,7 @@
 New Cluster Setup Steps -
 
 
-0. Copy in id_ed* files into node0 so that it can ssh to other nodes. Also copy in .screenrc to node0.
+0. Copy in id_ed* files into node0 so that it can ssh to other nodes. Also copy in .screenrc to node0. Also copy in kubelet and kubelet.c. 
 1. git clone https://... /kubernetes-helper on the master node. (Node 0) - Generate personal access token and copy into node0 git clone command (password).
 2. cd kubernetes-helper
 3. Run pre-master.sh
