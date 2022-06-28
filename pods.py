@@ -8,6 +8,7 @@ import subprocess
 from multiprocessing import Pool
 from time import time
 import os
+from concurrent import futures
 
 job_to_numtasks = {}
 #Stats printed out.
@@ -18,6 +19,9 @@ kubeletqtimes = []
 node_to_pod_count = collections.defaultdict(int)
 scheduling_cycles_per_pod=[]
 default_time = timedelta(microseconds=0)
+
+#For calculating time interval between pod deletion at node versus scheduling a new pod at the node.
+all_intervals=[]
 
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%m%d %H:%M:%S.%f')
@@ -202,6 +206,23 @@ def complete_processing(results):
     if count < job_to_numtasks[jobname]:
         print("Job", jobname, "only has", count,"pods while the file enumerates", job_to_numtasks[jobname])
 
+def process_interval(filepath):
+    partial_intervals = []
+    with open(filepath, 'r') as f:
+        start = datetime.min
+        for log in f:
+            if "Attempting to bind pod to node" in log:
+                start = extractDateTime(compiled.search(log).group(0))
+                continue
+            if "Delete event for scheduled pod" in log:
+                if start == datetime.min:
+                    continue
+                partial_intervals.append(extractDateTime(compiled.search(log).group(0)) - start)
+                start = datetime.min
+                continue
+    return partial_intervals
+
+
 def process():
     #https://github.com/kubernetes/klog/blob/main/klog.go#642
     #Log lines have this form:
@@ -234,6 +255,17 @@ def process():
         for r in results:
             r.wait()
 
+    subprocess.check_output(['bash', 'time_poddelete_podschedule.sh'])
+    filepaths = []
+    count = 0
+    for filename in os.listdir('/local/scratch/tempdir'):
+        filepaths.append(os.path.join('/local/scratch/tempdir', filename))
+    with futures.ProcessPoolExecutor() as pool:
+        for partial_intervals in pool.map(process_interval, filepaths):
+            all_intervals += partial_intervals
+            count += 1
+            print("Finished processing", count,"files for interval evaluation")
+
 
 def post_process():
     node_to_pods = list(dict(sorted(node_to_pod_count.items(), key=lambda item: item[1])).values())
@@ -245,6 +277,8 @@ def post_process():
     print("Count of pods on nodes -", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99))
     print("Stats for number of scheduling cycles per pod -", percentile(scheduling_cycles_per_pod, 50), percentile(scheduling_cycles_per_pod, 90), percentile(scheduling_cycles_per_pod, 99))
     print("Pods discarded is", pods_discarded)
+    print("Number of pods evaluated for intervals in pod deletion and schedule times", len(all_intervals))
+    print("Stats for Interval Times between pod being deleted and node being scheduled -",percentile(all_intervals, 50), percentile(all_intervals, 90), percentile(all_intervals, 99))
 
 #Process pod stats.    
 start_time = time()
