@@ -217,6 +217,7 @@ def process():
     
     # Process workload file to get num tasks for each job
     jobid = 0
+    print("This file processes the number of jobs present in temp.tr. Ensure that is fine.")
     f = open('temp.tr', 'r')
     for row in f:
         row = row.split()
