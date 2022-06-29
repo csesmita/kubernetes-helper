@@ -10,7 +10,6 @@ from threading import Timer
 from numpy import percentile
 from random import randint
 import collections
-import signal
 import sys
 from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
@@ -40,12 +39,17 @@ config.load_kube_config()
 k8s_client = client.ApiClient()
 
 
-UTIL_LOG_INTERVAL = 300
+UTIL_LOG_INTERVAL = 120
 UTIL_LOG_NAME = "node_utilization.txt"
 def log_node_util():
     #print out to file
     with open(UTIL_LOG_NAME, "a+") as f:
         subprocess.run(["kubectl", "top", "nodes", "--sort-by", "cpu"], stdout=f)
+
+class RepeatTimer(Timer):
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.function(*self.args, **self.kwargs)
 
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
@@ -143,8 +147,8 @@ def main():
     f.close()
 
     #Start logging node utilization
-    t = Timer(UTIL_LOG_INTERVAL, log_node_util)
-    t. start()
+    t = RepeatTimer(UTIL_LOG_INTERVAL, log_node_util)
+    t.start()
 
     #Process scheduler stats.    
     stats(num_processes)
