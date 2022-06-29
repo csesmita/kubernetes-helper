@@ -3,7 +3,8 @@ import numpy as np
 import collections
 import random
 from matplotlib import pyplot as plt
-'''
+from collections import defaultdict
+
 ###########################################################################
 # The first part of the script analyzes the job response time.
 ###########################################################################
@@ -11,7 +12,7 @@ c=[]
 d=[]
 jobids=[]
 jobid = 0
-with open("results/jrt/c.10000J.200X.50N", 'r') as f:
+with open("results/jrt/c.10000J.200X.50N.2", 'r') as f:
     for r in f:
         if "has JRT" not in r:
             continue
@@ -19,7 +20,7 @@ with open("results/jrt/c.10000J.200X.50N", 'r') as f:
         c.append(float(r[4]))
         jobid += 1
         jobids.append(jobid)
-with open("results/jrt/d.10000J.200X.50N.10S", 'r') as f:
+with open("results/jrt/d.10000J.200X.50N.10S.2", 'r') as f:
     for r in f:
         if "has JRT" not in r:
             continue
@@ -73,7 +74,6 @@ plt.legend()
 plt.show()
 print("[50,90,99] Percentiles for Centralized - ", np.percentile(c, 50), np.percentile(c, 90), np.percentile(c, 99))
 print("[50,90,99] Percentiles for Decentralized - ", np.percentile(d, 50), np.percentile(d, 90), np.percentile(d, 99))
-'''
 
 ###########################################################################
 # The second part of the script analyzes the pod queue and scheduling times.
@@ -103,7 +103,7 @@ d_job_sa_list=collections.defaultdict(float)
 d_job_kq_list=collections.defaultdict(float)
 d_job_q_list=collections.defaultdict(float)
 d_job_xt_list=collections.defaultdict(float)
-with open("results/pods/pods.c.10000J.200X.50N",'r') as f:
+with open("results/pods/pods.c.10000J.200X.50N.2",'r') as f:
     for r in f:
         if "SchedulerQueueTime" not in r:
             continue
@@ -122,7 +122,7 @@ with open("results/pods/pods.c.10000J.200X.50N",'r') as f:
         c_job_xt_list[jobname] += xt
 
 #Pod job18-bl57n - SchedulerQueueTime 0.00192 SchedulingAlgorithmTime 0.000493 KubeletQueueTime 0.000207 Node "node28.sv440-128365.decentralizedsch-pg0.utah.cloudlab.us" ExecutionTime 500.37717814 NumSchedulingCycles 1
-with open("results/pods/pods.d.10000J.200X.50N.10S", 'r') as f:
+with open("results/pods/pods.d.10000J.200X.50N.10S.2", 'r') as f:
     for r in f:
         if "SchedulerQueueTime" not in r:
             continue
@@ -166,7 +166,6 @@ print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time- ", np.perc
 print("[50,90,99] Percentiles for Decentralized Kubelet Queue Time- ", np.percentile(d_kq_list, 50), np.percentile(d_kq_list, 90), np.percentile(d_kq_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler and Kubelet Queue Time- ", np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99))
 
-'''
 #Scheduler Algorithm Times
 percentiles=['50', '90', '99']
 x=np.arange(len(percentiles))
@@ -184,9 +183,7 @@ fig.tight_layout()
 plt.show()
 print("[50,90,99] Percentiles for Centralized Scheduler Algorithm Time- ", np.percentile(c_sa_list, 50), np.percentile(c_sa_list, 90), np.percentile(c_sa_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler Algorithm Time- ", np.percentile(d_sa_list, 50), np.percentile(d_sa_list, 90), np.percentile(d_sa_list, 99))
-'''
 
-'''
 #Execution Time - Should match since this comes from the workload
 percentiles=['50', '90', '99']
 x=np.arange(len(percentiles))
@@ -204,7 +201,6 @@ fig.tight_layout()
 plt.show()
 print("[50,90,99] Percentiles for Centralized Execution Times- ", np.percentile(c_xt_list, 50), np.percentile(c_xt_list, 90), np.percentile(c_xt_list, 99))
 print("[50,90,99] Percentiles for Decentralized Execution Times- ", np.percentile(d_xt_list, 50), np.percentile(d_xt_list, 90), np.percentile(d_xt_list, 99))
-'''
 
 c_sq_list = list(c_job_sq_list.values())
 d_q_list = list(d_job_q_list.values())
@@ -227,7 +223,6 @@ plt.show()
 print("[50,90,99] Percentiles for Centralized Scheduler Queue Time Per Job- ", np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time Per Job- ", np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99))
 
-'''
 c_sa_list = list(c_job_sa_list.values())
 d_sa_list = list(d_job_sa_list.values())
 #Scheduler Algorithm Times
@@ -247,9 +242,7 @@ fig.tight_layout()
 plt.show()
 print("[50,90,99] Percentiles for Centralized Scheduler Algorithm Time Per Job- ", np.percentile(c_sa_list, 50), np.percentile(c_sa_list, 90), np.percentile(c_sa_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler Algorithm Time Per Job- ", np.percentile(d_sa_list, 50), np.percentile(d_sa_list, 90), np.percentile(d_sa_list, 99))
-'''
 
-'''
 c_xt_list = list(c_job_xt_list.values())
 d_xt_list = list(d_job_xt_list.values())
 #Execution Time - Should match since this comes from the workload
@@ -269,4 +262,34 @@ fig.tight_layout()
 plt.show()
 print("[50,90,99] Percentiles for Centralized Execution Time Per Job- ", np.percentile(c_xt_list, 50), np.percentile(c_xt_list, 90), np.percentile(c_xt_list, 99))
 print("[50,90,99] Percentiles for Decentralized Execution Time Per Job- ", np.percentile(d_xt_list, 50), np.percentile(d_xt_list, 90), np.percentile(d_xt_list, 99))
-'''
+
+# NAME                                                        CPU(cores)   CPU%        MEMORY(bytes)   MEMORY%     
+# node1.sv440-128429.decentralizedsch-pg0.utah.cloudlab.us    35844m       56%         2656Mi          2%
+c_per_node_cpu = defaultdict(list)
+d_per_node_cpu = defaultdict(list)
+with open("results/utilization/utilization.c.10000J.200X.50N.2", 'r') as f:
+    for r in f:
+        if "decentralizedsch-pg0.utah.cloudlab.us" not in r:
+            continue
+        r = r.split()
+        nodename = r[0]
+        print(nodename)
+        cpu = int((r[1].split("m"))[0])
+        print(cpu)
+        c_per_node_cpu[nodename].append(cpu)
+
+with open("results/utilization/utilization.d.10000J.200X.50N.10S.2", 'r') as f:
+    for r in f:
+        if "decentralizedsch-pg0.utah.cloudlab.us" not in r:
+            continue
+        r = r.split()
+        nodename = r[0]
+        cpu = int((r[1].split("m"))[0])
+        d_per_node_cpu[nodename].append(cpu)
+print(c_per_node_cpu)
+assert(len(c_per_node_cpu.keys()) == len(d_per_node_cpu.keys()))
+print("Number of nodes evaluated - ", len(c_per_node_cpu.keys())
+#res = {k: np.percentile(v, 50) for k,v in c_per_node_cpu.items()}
+#print("For C, 50th percentile CPU consumption across nodes is ", res)
+#res = {k: np.percentile(v, 50) for k,v in d_per_node_cpu.items()}
+#print("For D, 50th percentile CPU consumption across nodes is ", res)
