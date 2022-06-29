@@ -14,5 +14,4 @@ scp $node:node_utilization.txt results/utilization/
 scp $node:/local/scratch/syslog results/
 scp results/syslog caelum-306:/local/scratch/syslog.xxxx
 echo "Change the name of the node utilization file on airwolf and syslog file on caelum-306."
-echo "Press any key when done."
-read  -n 1
+read -n 1 -p "Press any key when done."
