@@ -206,6 +206,8 @@ def complete_processing(results):
     if count < job_to_numtasks[jobname]:
         print("Job", jobname, "only has", count,"pods while the file enumerates", job_to_numtasks[jobname])
 
+pattern = '\d{2}\d{2} \d{2}:\d{2}:\d{2}\.\d{6}'
+compiled = re.compile(pattern)
 def process_interval(filepath):
     partial_intervals = []
     with open(filepath, 'r') as f:
@@ -224,6 +226,7 @@ def process_interval(filepath):
 
 
 def process():
+    global all_intervals
     #https://github.com/kubernetes/klog/blob/main/klog.go#642
     #Log lines have this form:
     #    Lmmdd hh:mm:ss.uuuuuu threadid file:line] msg...
@@ -233,9 +236,6 @@ def process():
     #    dd               The day (zero padded)
     #    hh:mm:ss.uuuuuu  Time in hours, minutes and fractional seconds
     #Look for Lmmdd hh:mm:ss.uuuuuu pattern in logs
-    pattern = '\d{2}\d{2} \d{2}:\d{2}:\d{2}\.\d{6}'
-    compiled = re.compile(pattern)
-    
     # Process workload file to get num tasks for each job
     jobid = 0
     print("This file processes the number of jobs present in temp.tr. Ensure that is fine.")
