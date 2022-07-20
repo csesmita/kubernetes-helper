@@ -94,3 +94,14 @@ sudo kubeadm join 128.232.80.13:6443 --token 0qshgj.2y0cyd7xvp1r5i1v \
 Additional Notes - 
 1. Syslog is used for logs' shipping. /etc/rsyslog.conf has to be modified for server (to allow logs on udp on port 514) and on the client (to export all syslog.* to caelum-xxx:514). Docker logging config (in /etc/docker/daemon.json) should point to log-driver as syslog. Restart systemctl after changes to rsyslog or docker services. Fluentd, etc not needed.
 2. When starting an experiment, ensure screen and then start the experiment on management node. Else, once network disconnects, the script will stop.
+
+
+Changing binary of the scheduler - 
+1. Build new binary and copy into caelum-104.
+sv440@caelum-104:~$ cat Dockerfile-scheduler
+FROM gcr.io/distroless/base-debian10:latest
+ADD ./kube-scheduler.peekmany /usr/local/bin/kube-scheduler
+2. sudo docker -t sv440/sv440:<tag> -f Dockerfile-scheduler .
+3. sudo docker push sv440/sv440:<tag>
+4. Change manifest of scheduler to have image as the new tag.
+        
