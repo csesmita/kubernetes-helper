@@ -104,4 +104,5 @@ ADD ./kube-scheduler.peekmany /usr/local/bin/kube-scheduler
 2. sudo docker -t sv440/sv440:<tag> -f Dockerfile-scheduler .
 3. sudo docker push sv440/sv440:<tag>
 4. Change manifest of scheduler to have image as the new tag.
+5. If capturing a new log message, add that to syslog configs.
         
