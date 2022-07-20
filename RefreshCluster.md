@@ -105,4 +105,8 @@ ADD ./kube-scheduler.peekmany /usr/local/bin/kube-scheduler
 3. sudo docker push sv440/sv440:<tag>
 4. Change manifest of scheduler to have image as the new tag.
 5. If capturing a new log message, add that to syslog configs.
+6. If changing centralized scheduler, regcred don't work for static pods. So, host local docker repository and pull image from there. 
+        docker run -d -p 5000:5000 --restart=always --name registry registry:2 (check that sudo docker image ls should shouw registry as a repository.)
+        docker tag my-scheduler-image localhost:5000/my-scheduler-image
+        docker push localhost:5000/my-scheduler-image
         
