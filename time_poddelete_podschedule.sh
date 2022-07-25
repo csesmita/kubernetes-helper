@@ -6,7 +6,9 @@
 match_delete="Delete event for scheduled pod"
 match_schedule="Attempting to bind pod to node"
 # First fish out all nodenames.
-nodes=($(fgrep -m 500 "$match_schedule" /local/scratch/syslog | awk -F'node=' {'print $2'} | tr -d '"' | sort -u))
+rm -rf /local/scratch/tempdir/
+mkdir -p /local/scratch/tempdir/
+nodes=($(fgrep -m 500 "$match_schedule" /local/scratch/syslog | awk -F 'node=' {'print $2'} | awk -F ' ' {'print $1'} | tr -d '"' | sort -u))
 for nodename in "${nodes[@]}"; do
     tempfile="/local/scratch/tempdir/temp-${nodename}"
     LC_ALL=C fgrep -e "$match_delete" -e "$match_schedule" /local/scratch/syslog > $tempfile
