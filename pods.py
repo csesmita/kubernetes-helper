@@ -19,6 +19,7 @@ kubeletqtimes = []
 node_to_pod_count = collections.defaultdict(int)
 scheduling_cycles_per_pod=[]
 default_time = timedelta(microseconds=0)
+jrt = []
 
 #For calculating time interval between pod deletion at node versus scheduling a new pod at the node.
 all_intervals=[]
@@ -45,12 +46,16 @@ def process_pod_scheduling_params(compiled, jobname):
     KUBELET_Q_DELETE = "Ejecting pod from worker queue"
     # This log comes from the pod image.
     EXECUTION_LOG    = "Working on"
+    POD_DONE_LOG     = "Delete event for scheduled pod"
 
     #Fetch the logs for pods of this job. Result is in jobname.txt
     out = subprocess.check_output(['bash', 'pods.sh', jobname, str(job_to_numtasks[jobname])])
     filename=''.join([jobname,'.txt'])
 
     return_results = []
+    job_start_time = datetime.max
+    job_end_time = datetime.min
+    tail_task = ""
     with open(filename, 'r') as f:
         # Fetch all pod related stats for each pod.
         podname=""
@@ -65,7 +70,7 @@ def process_pod_scheduling_params(compiled, jobname):
                         qtime = timeDiff(queue_time, default_time)
                         algotime = timeDiff(scheduling_algorithm_time, default_time)
                         kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles))
+                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
                 kubelet_queue_time = timedelta(microseconds=0)
@@ -97,6 +102,8 @@ def process_pod_scheduling_params(compiled, jobname):
                     discarded = True
                     continue
                 queue_add_time = extractDateTime(compiled.search(log).group(0))
+                if job_start_time > queue_add_time:
+                    job_start_time = queue_add_time
                 continue
             #This log happens exactly once
             if QUEUE_DELETE_LOG in log:
@@ -164,6 +171,11 @@ def process_pod_scheduling_params(compiled, jobname):
                 # Working on 19.458. Extract the last field in the line.
                 execution_time = float(log.split()[-1])
                 continue
+            if POD_DONE_LOG in log:
+                pod_done_time = extractDateTime(compiled.search(log).group(0))
+                if job_end_time < pod_done_time:
+                    job_end_time = pod_done_time
+                    tail_task = podname
         #For the last pod in file.
         if len(podname) > 0:
             if not discarded:
@@ -174,35 +186,50 @@ def process_pod_scheduling_params(compiled, jobname):
                 qtime = timeDiff(queue_time, default_time)
                 algotime = timeDiff(scheduling_algorithm_time, default_time)
                 kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles))
+            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time))
 
     os.remove(filename)
+    return_results.insert(0, (jobname, job_start_time, job_end_time, tail_task))
     return return_results
 
 def complete_processing(results):
-    global node_to_pod_count, qtimes, algotimes, kubeletqtimes, pods_discarded, scheduling_cycles_per_pod
+    global node_to_pod_count, qtimes, algotimes, kubeletqtimes, pods_discarded, scheduling_cycles_per_pod, jrt
     count = 0
+    jobname = ""
     for r in results:
-        # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles)
-        discarded = r[5]
-        if discarded == True:
-            pods_discarded += 1
-            continue
-        count += 1
-        podname = r[0]
-        nodename = r[1]
-        qtime = r[2]
-        algotime = r[3]
-        kubeletqtime = r[4]
-        execution_time = r[6]
-        scheduling_cycles = r[7]
-        node_to_pod_count[nodename] += 1
-        qtimes.append(qtime)
-        algotimes.append(algotime)
-        kubeletqtimes.append(kubeletqtime)
-        scheduling_cycles_per_pod.append(scheduling_cycles)
-        print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles)
-    jobname = (results[0])[0].split("-")[0]
+        if len(r) == 9:
+            # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles)
+            discarded = r[5]
+            if discarded == True:
+                pods_discarded += 1
+                continue
+            count += 1
+            podname = r[0]
+            nodename = r[1]
+            qtime = r[2]
+            algotime = r[3]
+            kubeletqtime = r[4]
+            execution_time = r[6]
+            scheduling_cycles = r[7]
+            queue_add_time = r[8]
+            node_to_pod_count[nodename] += 1
+            qtimes.append(qtime)
+            algotimes.append(algotime)
+            kubeletqtimes.append(kubeletqtime)
+            scheduling_cycles_per_pod.append(scheduling_cycles)
+            diff = timeDiff((queue_add_time- job_start_time), default_time)
+            if podname == tail_task:
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "TAIL TASK")
+            else:
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff)
+        elif len(r) == 4:
+            jobname = r[0]
+            job_start_time = r[1]
+            job_end_time = r[2]
+            tail_task = r[3]
+            diff = timeDiff((job_end_time - job_start_time) , default_time)
+            print("Job ",jobname,"has JRT", diff)
+            jrt.append(diff)
     if count < job_to_numtasks[jobname]:
         print("Job", jobname, "only has", count,"pods while the file enumerates", job_to_numtasks[jobname])
 
@@ -279,6 +306,7 @@ def post_process():
     print("Pods discarded is", pods_discarded)
     print("Number of pods evaluated for intervals in pod deletion and schedule times", len(all_intervals))
     print("Stats for Interval Times between pod being deleted and node being scheduled -",percentile(all_intervals, 50), percentile(all_intervals, 90), percentile(all_intervals, 99))
+    print("Stats for JRT -",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
 
 #Process pod stats.    
 start_time = time()
