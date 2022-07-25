@@ -15,7 +15,7 @@ spec:
         image: sv440/sv440:job-wq
         env:
         - name: REDIS_SERVICE_HOST
-          value: "10.110.227.198"
+          value: "10.108.14.203"
         - name: JOBID
           value: "$JOBID"
         - name: ESTRUNTIME
