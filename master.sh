@@ -35,6 +35,7 @@ sleep 10
 kubectl get nodes
 read -n 1 -p "Check the status of nodes. Press when all are ready."
 
+read -n 1 -p "Ensure desired number of schedulers are in the scheduler_config. Press when ready."
 kubectl apply -f scheduler_configs
 
 echo "Checking if credentials got applied correctly to custom schedulers."
