@@ -78,6 +78,6 @@ do
 done
 wait
 
-echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/"
+echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/. Copy in kubellet.c and run switch_kubelet.sh."
 echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods."
 echo "Ensure you start a screen on node1 before starting experiments. Also, press yes when asked about screen. CHeck if jobs are created after starting the script."
