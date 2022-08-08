@@ -122,6 +122,11 @@ class RedisWQ(object):
     def delete(self, name):
         self._db.delete(name)
 
+    # Get value of element at index
+    def get(self, index):
+        value = self._db.lindex(self._main_q_key, index)
+        return value
+
 # TODO: add functions to clean up all keys associated with "name" when
 # processing is complete.
 

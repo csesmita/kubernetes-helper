@@ -5,11 +5,11 @@ metadata:
 spec:
   completions: $NUM_TASKS
   parallelism: $NUM_TASKS
+  completionMode: Indexed
   template:
     metadata:
       name: $JOBID
     spec:
-      #schedulerName: schedulera
       containers:
       - name: c
         image: sv440/sv440:job-wq

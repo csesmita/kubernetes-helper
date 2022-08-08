@@ -5,6 +5,7 @@ metadata:
 spec:
   completions: $NUM_TASKS
   parallelism: $NUM_TASKS
+  completionMode: Indexed
   template:
     metadata:
       name: $JOBID
