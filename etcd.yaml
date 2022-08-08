@@ -15,7 +15,6 @@ spec:
     - etcd
     - --advertise-client-urls=https://128.110.219.55:2379
     - --auto-compaction-retention=1
-    - --advertise-client-urls=https://128.232.80.13:2379
     - --cert-file=/etc/kubernetes/pki/etcd/server.crt
     - --client-cert-auth=true
     - --data-dir=/var/lib/etcd
