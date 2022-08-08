@@ -17,7 +17,7 @@ spec:
     - --config=/etc/kubernetes/schedulerconf/kube-scheduler.conf
     - --leader-elect=true
     - --v=4
-    image: k8s.gcr.io/kube-scheduler:v1.23.3
+    image: k8s.gcr.io/kube-scheduler:v1.23.6
     imagePullPolicy: Always
     livenessProbe:
       failureThreshold: 8
