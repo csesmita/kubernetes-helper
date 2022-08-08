@@ -282,6 +282,7 @@ def process():
         for r in results:
             r.wait()
 
+    '''
     subprocess.check_output(['bash', 'time_poddelete_podschedule.sh'])
     filepaths = []
     count = 0
@@ -292,6 +293,7 @@ def process():
             all_intervals += partial_intervals
             count += 1
             print("Finished processing", count,"files for interval evaluation")
+    '''
 
 
 def post_process():
@@ -303,10 +305,10 @@ def post_process():
     print("Number of worker nodes", len(node_to_pod_count.keys()))
     print("Count of pods on nodes -", percentile(node_to_pods, 50), percentile(node_to_pods, 90), percentile(node_to_pods, 99))
     print("Stats for number of scheduling cycles per pod -", percentile(scheduling_cycles_per_pod, 50), percentile(scheduling_cycles_per_pod, 90), percentile(scheduling_cycles_per_pod, 99))
-    print("Pods discarded is", pods_discarded)
-    print("Number of pods evaluated for intervals in pod deletion and schedule times", len(all_intervals))
-    print("Stats for Interval Times between pod being deleted and node being scheduled -",percentile(all_intervals, 50), percentile(all_intervals, 90), percentile(all_intervals, 99))
     print("Stats for JRT -",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
+    print("Pods discarded is", pods_discarded)
+    #print("Number of pods evaluated for intervals in pod deletion and schedule times", len(all_intervals))
+    #print("Stats for Interval Times between pod being deleted and node being scheduled -",percentile(all_intervals, 50), percentile(all_intervals, 90), percentile(all_intervals, 99))
 
 #Process pod stats.    
 start_time = time()
