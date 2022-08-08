@@ -34,10 +34,11 @@ algotimes = []
 kubeletqtimes = []
 node_to_pod_count = collections.defaultdict(int)
 scheduler_to_algotimes = collections.defaultdict(int)
-
+jobnames = []
 config.load_kube_config()
 k8s_client = client.ApiClient()
 
+host = "10.108.14.203"
 
 UTIL_LOG_INTERVAL = 120
 UTIL_LOG_NAME = "node_utilization.txt"
@@ -69,7 +70,6 @@ def setup(is_central, num_sch):
      
     with open(job_file, 'r') as file :
         job_tmpl = file.read()
-    host = "10.108.14.203"
     jobid = 0
 
     # Process workload file
@@ -102,6 +102,7 @@ def setup(is_central, num_sch):
         # Cleanup possible remnants of an older run
         q.delete(jobstr)
         q.rpush(actual_duration)
+        jobnames.append(jobstr)
     f.close()
     return jobid
 
@@ -284,6 +285,10 @@ def post_process():
     print("Total number of jobs is", max_job_id)
     print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
     print("Schedulers and number of tasks they assigned", schedulertojob)
+    for jobname in jobnames:
+        q = rediswq.RedisWQ(name=jobname, host=host)
+        # Cleanup remnants of the run
+        q.delete(jobname)
 
 if __name__ == '__main__':
     main()
