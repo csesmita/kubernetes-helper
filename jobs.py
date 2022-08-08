@@ -102,6 +102,7 @@ def setup(is_central, num_sch):
         # Cleanup possible remnants of an older run
         q.delete(jobstr)
         q.rpush(actual_duration)
+        q.disconnect()
         jobnames.append(jobstr)
     f.close()
     return jobid
@@ -123,6 +124,7 @@ def main():
     is_central = sys.argv[1] == 'c'
     num_sch = int(sys.argv[2])
     max_job_id = setup(is_central, num_sch)
+    print("Setup complete.")
     num_processes = setup_chunks()
     # Process workload file
     f = open('temp.tr', 'r')
