@@ -79,5 +79,6 @@ done
 wait
 
 echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/. Copy in kubellet.c and run switch_kubelet.sh."
-echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods."
-echo "Ensure you start a screen on node1 before starting experiments. Also, press yes when asked about screen. CHeck if jobs are created after starting the script."
+echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods.Also, check if desired number of schedulers are present in scheduler_config and are running."
+echo "SSH to node1. Create the temp file and change the rate of job arrivals in job.py"
+echo "Also, ensure you start a screen on node1 before starting experiments. Press yes when asked about screen. CHeck if jobs are created after starting the script."
