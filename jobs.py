@@ -291,6 +291,7 @@ def post_process():
         q = rediswq.RedisWQ(name=jobname, host=host)
         # Cleanup remnants of the run
         q.delete(jobname)
+        q.disconnect()
 
 if __name__ == '__main__':
     main()
