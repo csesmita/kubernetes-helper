@@ -127,6 +127,8 @@ class RedisWQ(object):
         value = self._db.lindex(self._main_q_key, index)
         return value
 
+    def disconnect(self):
+        self._db.connection_pool.disconnect()
 # TODO: add functions to clean up all keys associated with "name" when
 # processing is complete.
 
