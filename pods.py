@@ -192,8 +192,9 @@ def process_pod_scheduling_params(compiled, jobname):
     return_results.insert(0, (jobname, job_start_time, job_end_time, tail_task))
     return return_results
 
+epoch_start = datetime.max
 def complete_processing(results):
-    global node_to_pod_count, qtimes, algotimes, kubeletqtimes, pods_discarded, scheduling_cycles_per_pod, jrt
+    global node_to_pod_count, qtimes, algotimes, kubeletqtimes, pods_discarded, scheduling_cycles_per_pod, jrt, epoch_start
     count = 0
     jobname = ""
     for r in results:
@@ -218,10 +219,13 @@ def complete_processing(results):
             kubeletqtimes.append(kubeletqtime)
             scheduling_cycles_per_pod.append(scheduling_cycles)
             diff = timeDiff((queue_add_time- job_start_time), default_time)
+            if epoch_start > queue_add_time:
+                epoch_start = queue_add_time
+            queue_add_time_abs = timeDiff(queue_add_time - epoch_start, default_time)
             if podname == tail_task:
-                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "TAIL TASK")
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs, "TAIL TASK")
             else:
-                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff)
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs)
         elif len(r) == 4:
             jobname = r[0]
             job_start_time = r[1]
