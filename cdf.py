@@ -106,6 +106,9 @@ t_d_job_kq_list=collections.defaultdict(float)
 t_d_job_q_list=collections.defaultdict(float)
 t_d_job_xt_list=collections.defaultdict(float)
 
+t_c_secafterepoch = {}
+t_d_secafterepoch = {}
+
 #Queue times across tasks of a job
 c_job_sq_dev=collections.defaultdict(list)
 d_job_sq_dev=collections.defaultdict(list)
@@ -141,6 +144,7 @@ with open("results/pods/pods.c.10000J.400X.50N.YH",'r') as f:
             t_c_job_sq_list[jobname] += sq
             t_c_job_sa_list[jobname] += sa
             t_c_job_xt_list[jobname] += xt
+            t_c_secafterepoch[jobname] = float((line.split("SecAfterEpoch")[1]).split()[0])
 
 with open("results/pods/pods.d.10000J.400X.50N.10S.YH", 'r') as f:
     for line in f:
@@ -180,6 +184,7 @@ with open("results/pods/pods.d.10000J.400X.50N.10S.YH", 'r') as f:
             t_d_job_kq_list[jobname] += kq
             t_d_job_q_list[jobname]  += sq + kq
             t_d_job_xt_list[jobname] += xt
+            t_d_secafterepoch[jobname] = float((line.split("SecAfterEpoch")[1]).split()[0])
 
 #CDF of tail tasks.
 d = np.sort(t_d_q_list)
@@ -309,6 +314,7 @@ print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time Per Job Tai
 print("################")
 
 
+'''
 fanout = {}
 running_time = {}
 joblist = t_c_job_sq_list.keys()
@@ -323,7 +329,6 @@ with open("temp.tr", "r") as f:
         if jobstr in joblist:
             fanout[jobstr] = num_tasks
             running_time[jobstr] = est_time
-'''
 #Sort the tail qt times by value
 fanout_list = []
 running_time_list = []
@@ -374,6 +379,7 @@ with open("results/utilization/utilization.c.10000J.400X.50N.YH", 'r') as f:
         r = r.split()
         cpu = int((r[1].split("m"))[0])
         c_per_node_cpu.append(cpu)
+
 with open("results/utilization/utilization.d.10000J.400X.50N.10S.YH", 'r') as f:
     d_per_node_cpu = []
     for r in f:
@@ -389,10 +395,29 @@ with open("results/utilization/utilization.d.10000J.400X.50N.10S.YH", 'r') as f:
         cpu = int((r[1].split("m"))[0])
         d_per_node_cpu.append(cpu)
 
+# Arrange secafterepoch in ascending order.
+sorted_t_c_secafterepoch = sorted(t_c_secafterepoch.items(), key=lambda item: item[1])
+tail_c_time_sorted = []
+jobnames, tail_secafterepoch = zip(*sorted_t_c_secafterepoch) # unpack a list of pairs into two tuples
+for jobname in jobnames:
+    tail_c_time_sorted.append(t_c_job_sq_list[jobname])
+
+sorted_t_d_secafterepoch = sorted(t_d_secafterepoch.items(), key=lambda item: item[1])
+tail_d_time_sorted = []
+jobnames, tail_secafterepoch = zip(*sorted_t_d_secafterepoch) # unpack a list of pairs into two tuples
+for jobname in jobnames:
+    tail_d_time_sorted.append(t_d_job_sq_list[jobname])
+
 plt.plot(c_cpu)
 plt.xlabel('Time')
 plt.ylabel('Average CPU consumption across nodes')
 plt.title('(C) CPU Utilization over time')
+plt.show()
+
+plt.plot(tail_c_time_sorted)
+plt.xlabel('Time')
+plt.ylabel('Tail SQ Time')
+plt.title('(C) Tail SQ Time')
 plt.show()
 
 plt.plot(d_cpu)
@@ -400,3 +425,10 @@ plt.xlabel('Time')
 plt.ylabel('Average CPU consumption across nodes')
 plt.title('(D) CPU Utilization over time')
 plt.show()
+
+plt.plot(tail_d_time_sorted)
+plt.xlabel('Time')
+plt.ylabel('Tail SQ Time')
+plt.title('(D) Tail SQ Time')
+plt.show()
+
