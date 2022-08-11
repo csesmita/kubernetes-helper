@@ -313,66 +313,24 @@ print("[50,90,99] Percentiles for Centralized Scheduler Queue Time Per Job Tail 
 print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time Per Job Tail Tasks - ", np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99))
 print("################")
 
-
-'''
-fanout = {}
-running_time = {}
-joblist = t_c_job_sq_list.keys()
-with open("temp.tr", "r") as f:
-    jobid = 0
-    for row in f:
-        row = row.split()
-        num_tasks = int(row[1])
-        est_time = float(row[2])
-        jobid += 1
-        jobstr = "".join(["job",str(jobid)])
-        if jobstr in joblist:
-            fanout[jobstr] = num_tasks
-            running_time[jobstr] = est_time
-#Sort the tail qt times by value
-fanout_list = []
-running_time_list = []
-lists = sorted(t_c_job_sq_list.items(), key=lambda item: item[1])
-jobnames, tail_times = zip(*lists) # unpack a list of pairs into two tuples
-for jobname in jobnames:
-    fanout_list.append(fanout[jobname])
-    running_time_list.append(running_time[jobname])
-plt.plot(jobnames, tail_times, 'b', label='Tail Times')
-plt.plot(jobnames, running_time_list, 'r--', label='Running Times')
-plt.xlabel('Jobs')
-plt.title('Jobs and Tail Times and Running Times')
-plt.legend()
-plt.show()
-
-#Sort the tail qt times by value
-fanout_list = []
-running_time_list = []
-lists = sorted(t_c_job_sq_list.items(), key=lambda item: item[1])
-jobnames, tail_times = zip(*lists) # unpack a list of pairs into two tuples
-for jobname in jobnames:
-    fanout_list.append(fanout[jobname])
-    running_time_list.append(running_time[jobname])
-plt.plot(jobnames, tail_times, 'b', label='Tail Times')
-plt.plot(jobnames, fanout_list, 'g--', label='Fanout')
-plt.xlabel('Jobs')
-plt.title('Jobs and Tail Times and Fanout')
-plt.legend()
-plt.show()
-'''
-
-
 # NAME                                                        CPU(cores)   CPU%        MEMORY(bytes)   MEMORY%     
 # node1.sv440-128429.decentralizedsch-pg0.utah.cloudlab.us    35844m       56%         2656Mi          2%
 c_cpu = []
 d_cpu = []
+dc_cpu = {}
+dd_cpu = {}
 with open("results/utilization/utilization.c.10000J.400X.50N.YH", 'r') as f:
     c_per_node_cpu = []
+    start_time = 0
     for r in f:
         if "NAME" in r:
             if len(c_per_node_cpu) > 0:
                 # Take the average of this iteration over all nodes.
-                c_cpu.append(sum(c_per_node_cpu) / len(c_per_node_cpu))
+                cpu_avg = sum(c_per_node_cpu) / len(c_per_node_cpu)
+                c_cpu.append(cpu_avg)
                 c_per_node_cpu.clear()
+                dc_cpu[start_time] = cpu_avg 
+                start_time += 120
             continue
         if "node0" in r or "node1" in r:
             continue
@@ -382,12 +340,16 @@ with open("results/utilization/utilization.c.10000J.400X.50N.YH", 'r') as f:
 
 with open("results/utilization/utilization.d.10000J.400X.50N.10S.YH", 'r') as f:
     d_per_node_cpu = []
+    start_time = 0
     for r in f:
         if "NAME" in r:
             if len(d_per_node_cpu) > 0:
                 # Take the average of this iteration over all nodes.
-                d_cpu.append(sum(d_per_node_cpu) / len(d_per_node_cpu))
+                cpu_avg = sum(d_per_node_cpu) / len(d_per_node_cpu)
+                d_cpu.append(cpu_avg)
                 d_per_node_cpu.clear()
+                dd_cpu[start_time] = cpu_avg
+                start_time += 120
             continue
         if "node0" in r or "node1" in r:
             continue
@@ -395,40 +357,41 @@ with open("results/utilization/utilization.d.10000J.400X.50N.10S.YH", 'r') as f:
         cpu = int((r[1].split("m"))[0])
         d_per_node_cpu.append(cpu)
 
+print("CPU Utilization in C", np.percentile(c_cpu, 50), np.percentile(c_cpu, 90), np.percentile(c_cpu, 99))
+print("CPU Utilization in D", np.percentile(d_cpu, 50), np.percentile(d_cpu, 90), np.percentile(d_cpu, 99))
+
 # Arrange secafterepoch in ascending order.
 sorted_t_c_secafterepoch = sorted(t_c_secafterepoch.items(), key=lambda item: item[1])
 tail_c_time_sorted = []
+dtail_c_time_sorted = {}
 jobnames, tail_secafterepoch = zip(*sorted_t_c_secafterepoch) # unpack a list of pairs into two tuples
 for jobname in jobnames:
     tail_c_time_sorted.append(t_c_job_sq_list[jobname])
+    tail_time = t_c_secafterepoch[jobname]
+    dtail_c_time_sorted[tail_time] = t_c_job_sq_list[jobname]
 
 sorted_t_d_secafterepoch = sorted(t_d_secafterepoch.items(), key=lambda item: item[1])
 tail_d_time_sorted = []
+dtail_d_time_sorted = {}
 jobnames, tail_secafterepoch = zip(*sorted_t_d_secafterepoch) # unpack a list of pairs into two tuples
 for jobname in jobnames:
-    tail_d_time_sorted.append(t_d_job_sq_list[jobname])
+    tail_d_time_sorted.append(t_d_job_q_list[jobname])
+    tail_time = t_d_secafterepoch[jobname]
+    dtail_d_time_sorted[tail_time] = t_d_job_q_list[jobname]
 
-plt.plot(c_cpu)
+dc_cpu = sorted(dc_cpu.items())
+dtail_c_time_sorted = sorted(dtail_c_time_sorted.items())
+x,y = zip(*dc_cpu)
+plt.plot(x, y, label="(C) CPU Utilization")
+x,y=zip(*dtail_c_time_sorted)
+plt.plot(x,y, label="(C) Tail Latencies")
+dd_cpu = sorted(dd_cpu.items())
+dtail_d_time_sorted = sorted(dtail_d_time_sorted.items())
+x,y = zip(*dd_cpu)
+plt.plot(x,y, label="(D) CPU Utilization")
+x,y=zip(*dtail_d_time_sorted)
+plt.plot(x,y, label="(D) Tail Latencies")
 plt.xlabel('Time')
-plt.ylabel('Average CPU consumption across nodes')
-plt.title('(C) CPU Utilization over time')
+plt.title('Comparison of CPU Utilization and Tail Latencies over time in C and D')
+plt.legend()
 plt.show()
-
-plt.plot(tail_c_time_sorted)
-plt.xlabel('Time')
-plt.ylabel('Tail SQ Time')
-plt.title('(C) Tail SQ Time')
-plt.show()
-
-plt.plot(d_cpu)
-plt.xlabel('Time')
-plt.ylabel('Average CPU consumption across nodes')
-plt.title('(D) CPU Utilization over time')
-plt.show()
-
-plt.plot(tail_d_time_sorted)
-plt.xlabel('Time')
-plt.ylabel('Tail SQ Time')
-plt.title('(D) Tail SQ Time')
-plt.show()
-
