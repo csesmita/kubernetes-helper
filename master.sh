@@ -33,7 +33,7 @@ wait
 
 sleep 10
 kubectl get nodes
-read -n 1 -p "Check the status of nodes. Press when all are ready."
+read -n 1 -p "Check the status of nodes. Press when all are ready. Also count if 50 worker nodes are present."
 
 read -n 1 -p "Ensure desired number of schedulers are in the scheduler_config. Press when ready."
 kubectl apply -f scheduler_configs
@@ -79,6 +79,6 @@ done
 wait
 
 echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/. Copy in kubellet.c and run switch_kubelet.sh."
-echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods.Also, check if desired number of schedulers are present in scheduler_config and are running."
+echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods. Also, check if desired number of schedulers are present in scheduler_config and are running."
 echo "SSH to node1. Create the temp file and change the rate of job arrivals in job.py"
 echo "Also, ensure you start a screen on node1 before starting experiments. Press yes when asked about screen. CHeck if jobs are created after starting the script."
