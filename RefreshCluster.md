@@ -28,7 +28,7 @@ mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 (For the following command try =\$w1tch\#123 with no " " if the command fails.)
 kubectl create secret docker-registry regcred --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
-edit/main/RefreshCluster.md
+
 
 // Default scheduler - sudo mkdir -p /etc/kubernetes/schedulerconf folder && sudo cp kube-scheduler.conf /etc/kubernetes/schedulerconf
 
