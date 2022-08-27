@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scheduler42-config
+  namespace: kube-system
+data:
+  scheduler42-config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1beta3
+    kind: KubeSchedulerConfiguration
+    profiles:
+      - schedulerName: scheduler42
+        plugins:
+          multiPoint:
+            disabled:
+            - name: ImageLocality
+            - name: DefaultPreemption
+            - name: NodeResourcesBalancedAllocation
+          preFilter:
+            disabled:
+            - name: NodeResourcesFit
+          filter:
+            disabled:
+            - name: NodeResourcesFit
+          score:
+            disabled:
+            - name: ImageLocality
+            - name: NodeAffinity
+            - name: PodTopologySpread
+            - name: NodeResourcesBalancedAllocation
+            - name: VolumeBinding
+            - name: InterPodAffinity
+    leaderElection:
+      leaderElect: false    
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: scheduler
+    tier: control-plane
+  name: scheduler42
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      component: scheduler
+      tier: control-plane
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        component: scheduler
+        tier: control-plane
+        version: second
+    spec:
+      serviceAccountName: my-scheduler
+      containers:
+      - command:
+        - /usr/local/bin/kube-scheduler
+        - --config=/etc/kubernetes/scheduler42/scheduler42-config.yaml
+        - --v=4  
+        image: sv440/sv440:kube-scheduler
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 10259
+            scheme: HTTPS
+          initialDelaySeconds: 15
+        name: kube-scheduler42
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 10259
+            scheme: HTTPS
+        resources:
+          requests:
+            cpu: '0.1'
+            memory: '10Gi'
+          limits:
+            cpu: '0.1'
+            memory: '50Gi'
+        securityContext:
+          privileged: false
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/kubernetes/scheduler42
+      hostNetwork: false
+      hostPID: false
+      volumes:
+        - name: config-volume
+          configMap:
+            name: scheduler42-config
+
