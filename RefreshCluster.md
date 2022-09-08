@@ -12,6 +12,10 @@ New Cluster Setup Steps -
 
 
 ### Reset an existing cluster
+First reset master and workers.
+
+Then init and join them all together.
+This is because doing a reset onn workes after mmaster has been setup destroys the CNI config.
 
 To restart master and workers -
 
@@ -48,8 +52,6 @@ kubectl patch serviceaccount my-scheduler -n kube-system  -p '{"imagePullSecrets
 
 
 // At this point, create worker nodes so other kube-system pods can be hosted on them.
-
-//If nodes say NotReady with CNI network not ready error, then run worker-reset on all noes again, without cni0 and flannel.1 interface actions. Then the kubeadm init should bring nodes back.
 
 
 For custom scheduler instances - First create the service account (my-scheduler) then apply the scheduler configs.
@@ -103,7 +105,7 @@ Changing binary of the scheduler -
 sv440@caelum-104:~$ cat Dockerfile-scheduler
 FROM gcr.io/distroless/base-debian10:latest
 ADD ./kube-scheduler.peekmany /usr/local/bin/kube-scheduler
-2. sudo docker -t sv440/sv440:<tag> -f Dockerfile-scheduler .
+2. sudo docker build -t sv440/sv440:<tag> -f Dockerfile-scheduler .
 3. sudo docker push sv440/sv440:<tag>
 4. Change manifest of scheduler to have image as the new tag.
 5. If capturing a new log message, add that to syslog configs.
