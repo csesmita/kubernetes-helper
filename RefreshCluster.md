@@ -33,6 +33,7 @@ mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 
 // At this point, create worker nodes so other kube-system pods can be hosted on them.
 
+kubectl apply -f commponent.yaml
 
 (For the following command try =\$w1tch\#123 with no " " if the command fails.)
 kubectl create secret docker-registry regcred --docker-server=https://index.docker.io/v1/ --docker-username=sv440 --docker-password="\\$w1tch#123" --docker-email="sv440@cam.ac.uk" && kubectl get secret regcred --output="jsonpath={.data.\\.dockerconfigjson}" | base64 --decode
