@@ -117,4 +117,13 @@ ADD ./kube-scheduler.peekmany /usr/local/bin/kube-scheduler
         docker run -d -p 5000:5000 --restart=always --name registry registry:2 (check that sudo docker image ls should shouw registry as a repository.)
         docker tag my-scheduler-image localhost:5000/my-scheduler-image
         docker push localhost:5000/my-scheduler-image
+ 
+        
+        
+HA Setup - 
+        1. sudo apt update && sudo apt install keepalived haproxy
+        2. Identify common interface. ip addr and using ping <nodeid> -I <interface>
+        3. Identify non-pinging IP address on this interface. This is the API server dest port. Usually .200 IP should work.
+        4. Copy in check_apiserver.sh and keepalived.conf into /etc/keepalived and haproxy.conf into /etc/haproxy
+        
         
