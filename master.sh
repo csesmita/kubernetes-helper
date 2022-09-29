@@ -35,7 +35,7 @@ sleep 10
 kubectl get nodes
 read -n 1 -p "Check the status of nodes. Press when all are ready. Also count if 50 worker nodes are present."
 
-read -n 1 -p "Ensure desired number of schedulers are in the scheduler_config. Press when ready."
+read -n 1 -p "Ensure desired number of schedulers are in the scheduler_config. Change image, if required, to arm64. Press when ready."
 kubectl apply -f scheduler_configs
 
 echo "Checking if credentials got applied correctly to custom schedulers."
@@ -78,8 +78,9 @@ do
 done
 wait
 
-echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/. Copy in kubellet.c and run switch_kubelet.sh."
-echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods. Also, check if desired number of schedulers are present in scheduler_config and are running."
-echo "C or D,, change scheduler image if need be (jobbatch, none, etc.)"
+echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/. Copy in kubelet.c and run switch_kubelet.sh. Change image to arm64, if required."
+echo "If running D then copy in kubelet and run switch_kubelet.sh. Change image to arm64, if required. Let C scheduler remain as it schedules system pods. Also, check if desired number of schedulers are present in scheduler_config and are running. Again, change image of scheduler to arm64, if required."
+echo "C or D, change scheduler image if need be (jobbatch, none, etc.)"
+echo "Change image to arm64 in job_c annd job_d manifest files, if need be"
 echo "SSH to node1. Create the temp file and change the rate of job arrivals in job.py. If need be, the runninng times of the jobs as well."
 echo "Also, ensure you start a screen on node1 before starting experiments. Press yes when asked about screen. CHeck if jobs are created after starting the script."
