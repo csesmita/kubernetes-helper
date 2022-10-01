@@ -117,4 +117,45 @@ ADD ./kube-scheduler.peekmany /usr/local/bin/kube-scheduler
         docker run -d -p 5000:5000 --restart=always --name registry registry:2 (check that sudo docker image ls should shouw registry as a repository.)
         docker tag my-scheduler-image localhost:5000/my-scheduler-image
         docker push localhost:5000/my-scheduler-image
+ 
+        
+        
+HA Setup - 
+        
+        1. sudo apt update && sudo apt install keepalived haproxy
+        
+        2. Identify common interface. ip addr and using ping <nodeid> -I <interface>
+        
+        3. Identify non-pinging IP address on this interface. This is the API server dest port. Usually .200 IP should work.
+        
+        4. Copy in check_apiserver.sh and keepalived.conf into /etc/keepalived and haproxy.conf into /etc/haproxy
+        
+    ${STATE} is MASTER for one and BACKUP for all other hosts, hence the virtual IP will initially be assigned to the MASTER.
+    ${INTERFACE} is the network interface taking part in the negotiation of the virtual IP, e.g. eth0.
+    ${ROUTER_ID} should be the same for all keepalived cluster hosts while unique amongst all clusters in the same subnet. Many distros pre-configure its value to 51.
+    ${PRIORITY} should be higher on the control plane node than on the backups. Hence 101 and 100 respectively will suffice.
+    ${AUTH_PASS} should be the same for all keepalived cluster hosts, e.g. 42
+    ${APISERVER_VIP} is the virtual IP address negotiated between the keepalived cluster hosts.
+
+        
+        5. Change check_apiserver.sh
+        
+    ${APISERVER_VIP} is the virtual IP address negotiated between the keepalived cluster hosts.
+    ${APISERVER_DEST_PORT} the port through which Kubernetes will talk to the API Server.
+
+        6. Change haproxy.conf
+        
+        
+    ${APISERVER_DEST_PORT} the port through which Kubernetes will talk to the API Server.
+    ${APISERVER_SRC_PORT} the port used by the API Server instances
+    ${HOST1_ID} a symbolic name for the first load-balanced API Server host
+    ${HOST1_ADDRESS} a resolvable address (DNS name, IP address) for the first load-balanced API Server host
+    additional server lines, one for each load-balanced API Server host
+
+        7. Run on all control plane nodes -
+        systemctl enable haproxy --now && systemctl enable keepalived --now
+        
+        8. kubeadm init --control-plane-endpoint vip.mycluster.local:8443 --pod-network-cidr=10.244.0.0/16 --upload-certs
+        
+        Continue from there on. 
         
