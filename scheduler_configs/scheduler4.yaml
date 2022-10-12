@@ -54,7 +54,6 @@ spec:
         version: second
     spec:
       serviceAccountName: my-scheduler
-      priorityClassName: high-priority
       containers:
       - command:
         - /usr/local/bin/kube-scheduler
