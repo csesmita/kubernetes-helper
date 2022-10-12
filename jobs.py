@@ -38,7 +38,7 @@ jobnames = []
 config.load_kube_config()
 k8s_client = client.ApiClient()
 
-host = "10.100.112.241"
+host = "10.109.250.147"
 
 UTIL_LOG_INTERVAL = 120
 UTIL_LOG_NAME = "node_utilization.txt"
@@ -250,9 +250,9 @@ def process_job_object(job_object, job_client, last_resource_version):
 async def get_job_events(job_client, limit, continue_param, timeout_seconds, last_resource_version):
     try:
         if continue_param != None:
-            return job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param, timeout_seconds=timeout_seconds), None
+            return job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param), None
         #If resource_version is set then send the events from exact version, else if 0, then send event from any version.
-        return job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan', timeout_seconds=timeout_seconds), None
+        return job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan'), None
     except ApiException as e:
         print("Exception", e)
         return None, e
