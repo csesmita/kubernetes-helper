@@ -16,7 +16,7 @@ l=datetime.min
 f=""
 
 #Compare scheduling times.
-with open("results/ha/syslog/syslog.d.1000J.1000X.50N.10S.YH.sched1cpu.1controlplaneonly",'r') as f:
+with open("logs",'r') as f:
     for line in f:
         if add_event_string not in line and delete_event_string not in line:
             continue
@@ -36,7 +36,7 @@ for podname in pods_deleted.keys():
     if podname not in pods_added.keys():
         continue
     if pods_added[podname] == datetime.min or pods_added[podname] > pods_deleted[podname]:
-            raise AssertionError("Podname " + podname + " Got queue add time greater than queue eject time -- " + str(queue_add_time) + " " + str(queue_eject_time) + "-- " + line)
+            raise AssertionError("Podname " + podname + " Got queue add time greater than queue eject time -- " + str(queue_add_time) + " VERSUS " + str(queue_eject_time))
     t = (pods_deleted[podname] - pods_added[podname]).total_seconds()
     #if t > 20:
     #    print("Check pod", podname,"with", t, "seconds of scheduling")
