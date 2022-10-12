@@ -19,7 +19,7 @@ from math import ceil
 #TODO - Handle duplicate values when inserting into redis.
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
-SPEEDUP = 200
+SPEEDUP = 1000
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
@@ -38,7 +38,7 @@ jobnames = []
 config.load_kube_config()
 k8s_client = client.ApiClient()
 
-host = "10.108.14.203"
+host = "10.100.112.241"
 
 UTIL_LOG_INTERVAL = 120
 UTIL_LOG_NAME = "node_utilization.txt"
@@ -162,7 +162,7 @@ def main():
 #This evenly distributes events' load on processes.
 def setup_chunks():
     global max_job_id
-    num_cpu = os.cpu_count() -1
+    num_cpu = min(8, os.cpu_count() - 1)
     start_index = 1
     for i in range(num_cpu):
         chunks.put(start_index)
@@ -196,7 +196,11 @@ def stats(num_processes):
 
 def stitch_partial_results(partial_results):
     global jrt
-    partial_jrt, partial_job_to_jrt = partial_results[0]
+    try:
+        partial_jrt, partial_job_to_jrt = partial_results[0]
+    except:
+        print("Got exception result from process as", partial_results)
+        return
     if isinstance(partial_jrt, list):
         jrt = jrt + partial_jrt
         for jobname, job_completion in partial_job_to_jrt.items():
@@ -280,8 +284,8 @@ async def process_completed_jobs(job_client):
                 print("JOB - Caught resource version too old exception.")
                 last_resource_version = 0
                 continue_param = None
-            else:
-                raise e
+            #else:
+            #raise e
 
 def post_process():
     print("Total number of jobs is", max_job_id)
