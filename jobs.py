@@ -162,7 +162,7 @@ def main():
 #This evenly distributes events' load on processes.
 def setup_chunks():
     global max_job_id
-    num_cpu = min(os.cpu_count() -1, 8)
+    num_cpu = min(os.cpu_count() -1, 3)
     start_index = 1
     for i in range(num_cpu):
         chunks.put(start_index)
