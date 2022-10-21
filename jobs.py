@@ -19,7 +19,7 @@ from math import ceil
 #TODO - Handle duplicate values when inserting into redis.
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
-SPEEDUP = 200
+SPEEDUP = 1000
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
@@ -38,7 +38,7 @@ jobnames = []
 config.load_kube_config()
 k8s_client = client.ApiClient()
 
-host = "10.108.14.203"
+host = "10.109.250.147"
 
 UTIL_LOG_INTERVAL = 120
 UTIL_LOG_NAME = "node_utilization.txt"
@@ -162,7 +162,7 @@ def main():
 #This evenly distributes events' load on processes.
 def setup_chunks():
     global max_job_id
-    num_cpu = min(os.cpu_count() -1, 8)
+    num_cpu = min(os.cpu_count() -1, 3)
     start_index = 1
     for i in range(num_cpu):
         chunks.put(start_index)
@@ -196,7 +196,11 @@ def stats(num_processes):
 
 def stitch_partial_results(partial_results):
     global jrt
-    partial_jrt, partial_job_to_jrt = partial_results[0]
+    try:
+        partial_jrt, partial_job_to_jrt = partial_results[0]
+    except:
+        print("Got exception result from process as", partial_results)
+        return
     if isinstance(partial_jrt, list):
         jrt = jrt + partial_jrt
         for jobname, job_completion in partial_job_to_jrt.items():
@@ -246,9 +250,9 @@ def process_job_object(job_object, job_client, last_resource_version):
 async def get_job_events(job_client, limit, continue_param, timeout_seconds, last_resource_version):
     try:
         if continue_param != None:
-            return job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param, timeout_seconds=timeout_seconds), None
+            return job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param), None
         #If resource_version is set then send the events from exact version, else if 0, then send event from any version.
-        return job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan', timeout_seconds=timeout_seconds), None
+        return job_client.list_namespaced_job(namespace='default', limit=limit, resource_version = last_resource_version, resource_version_match='NotOlderThan'), None
     except ApiException as e:
         print("Exception", e)
         return None, e
@@ -280,8 +284,8 @@ async def process_completed_jobs(job_client):
                 print("JOB - Caught resource version too old exception.")
                 last_resource_version = 0
                 continue_param = None
-            else:
-                raise e
+            #else:
+            #raise e
 
 def post_process():
     print("Total number of jobs is", max_job_id)
