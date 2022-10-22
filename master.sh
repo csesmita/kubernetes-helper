@@ -13,7 +13,7 @@ read -n 1 -p "Credentials look ok?"
 sudo mkdir -p /etc/kubernetes/schedulerconf && sudo cp kube-scheduler.conf /etc/kubernetes/schedulerconf && sudo cp /etc/kubernetes/scheduler.conf /etc/kubernetes/schedulerconf/
 sudo mv /etc/kubernetes/manifests/kube-scheduler.yaml /tmp && sudo mv /etc/kubernetes/manifests/kube-apiserver.yaml /tmp && sudo mv /etc/kubernetes/manifests/kube-controller-manager.yaml /tmp && sudo mv /etc/kubernetes/manifests/etcd.yaml /tmp
 
-read -n 1 -p "Copy in API server, Kube Controller Manager, Kube Scheduler (from kube-scheduler.yaml.multiprofiles) and ETCD paramteres and restart. Also check image details are 1.23.6. Press any key when ready."
+read -n 1 -p "Use scalability manifests, if applicable. Copy in API server, Kube Controller Manager, Kube Scheduler (from kube-scheduler.yaml.multiprofiles) and ETCD paramteres and restart. Also check image details are 1.23.6. Press any key when ready."
 read -n 1 -p "Check API server, etc are up using kubectl get pods -n kube-system | grep apiserver"
 
 kubectl apply -f cpu-defaults.yaml --namespace=default
