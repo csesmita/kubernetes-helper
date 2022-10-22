@@ -57,11 +57,12 @@ read -n 1 -p "Verify that taint has been set on $node1name"
 #Syslog config - Master
 sudo cp syslog-configs/50-default.conf /etc/rsyslog.d/
 sudo cp syslog-configs/master-node-rsyslog.conf /etc/rsyslog.conf
+sudo rm /local/scratch/syslog
 sudo systemctl restart rsyslog
 
 #Syslog config - Management
 scp syslog-configs/50-default.conf syslog-configs/management-node-rsyslog.conf YH.tr pods.py pods.sh rediswq.py delete_jobs.sh jobs.py job_c.yaml job_d.yaml ~/.screenrc node1:
-ssh node1 "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp management-node-rsyslog.conf /etc/rsyslog.conf;sudo systemctl restart rsyslog"
+ssh node1 "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp management-node-rsyslog.conf /etc/rsyslog.conf;sudo rm /local/scratch/syslog; sudo systemctl restart rsyslog"
 
 #Syslog config - Workers. Starts with 2 since 1 is the management node.
 for (( i=2; i<=$numnodes; i++ ))
@@ -74,7 +75,7 @@ wait
 for (( i=2; i<=$numnodes; i++ ))
 do
     node="node$i"
-    ssh $node "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp worker-node-rsyslog.conf /etc/rsyslog.conf; sudo systemctl restart rsyslog" &
+    ssh $node "sudo cp 50-default.conf /etc/rsyslog.d/; sudo cp worker-node-rsyslog.conf /etc/rsyslog.conf; sudo rm /local/scratch/syslog; sudo systemctl restart rsyslog" &
 done
 wait
 
