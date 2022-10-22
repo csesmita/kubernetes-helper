@@ -59,7 +59,7 @@ spec:
         - /usr/local/bin/kube-scheduler
         - --config=/etc/kubernetes/scheduler26/scheduler26-config.yaml
         - --v=4  
-        image: sv440/sv440:kube-scheduler.scalability.500
+        image: sv440/sv440:kube-scheduler.scalability
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
