@@ -144,7 +144,7 @@ with open("results/pods/pods.c.10000J.400X.50N.YH",'r') as f:
             t_c_job_sq_list[jobname] += sq
             t_c_job_sa_list[jobname] += sa
             t_c_job_xt_list[jobname] += xt
-            t_c_secafterepoch[jobname] = float((line.split("SecAfterEpoch")[1]).split()[0])
+            #t_c_secafterepoch[jobname] = float((line.split("SecAfterEpoch")[1]).split()[0])
 
 with open("results/pods/pods.d.10000J.400X.50N.10S.YH", 'r') as f:
     for line in f:
@@ -184,7 +184,7 @@ with open("results/pods/pods.d.10000J.400X.50N.10S.YH", 'r') as f:
             t_d_job_kq_list[jobname] += kq
             t_d_job_q_list[jobname]  += sq + kq
             t_d_job_xt_list[jobname] += xt
-            t_d_secafterepoch[jobname] = float((line.split("SecAfterEpoch")[1]).split()[0])
+            #t_d_secafterepoch[jobname] = float((line.split("SecAfterEpoch")[1]).split()[0])
 
 #CDF of tail tasks.
 d = np.sort(t_d_q_list)
@@ -237,8 +237,8 @@ ax.set_ylabel("Percentile Scheduler and Kubelet Queue Time")
 ax.set_xticks(x)
 ax.set_xticklabels(percentiles)
 ax.legend()
-ax.bar_label(rects1, padding=3)
-ax.bar_label(rects2, padding=3)
+#ax.bar_label(rects1, padding=3)
+#ax.bar_label(rects2, padding=3)
 fig.tight_layout()
 plt.show()
 print("Number of pods evaluated (C)", len(c_sq_list), "and max wait time (C)", max(c_sq_list))
@@ -279,8 +279,8 @@ width=0.35
 fig, ax = plt.subplots()
 rects1= ax.bar(x-width/2, [np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99)], width, label="Centralized")
 rects2= ax.bar(x+width/2, [np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99)], width, label="Decentralized")
-ax.bar_label(rects1, padding=3, fmt="%d")
-ax.bar_label(rects2, padding=3, fmt="%d")
+#ax.bar_label(rects1, padding=3, fmt="%d")
+#ax.bar_label(rects2, padding=3, fmt="%d")
 ax.set_ylabel("Percentile Scheduler and Kubelet Queue Time Per Job")
 ax.set_xticks(x)
 ax.set_xticklabels(percentiles)
@@ -301,8 +301,8 @@ width=0.35
 fig, ax = plt.subplots()
 rects1= ax.bar(x-width/2, [np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99)], width, label="Centralized")
 rects2= ax.bar(x+width/2, [np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99)], width, label="Decentralized")
-ax.bar_label(rects1, padding=3, fmt="%d")
-ax.bar_label(rects2, padding=3, fmt="%d")
+#ax.bar_label(rects1, padding=3, fmt="%d")
+#ax.bar_label(rects2, padding=3, fmt="%d")
 ax.set_ylabel("Percentile Scheduler and Kubelet Queue Time For Tail Task of Jobs")
 ax.set_xticks(x)
 ax.set_xticklabels(percentiles)
@@ -359,7 +359,7 @@ with open("results/utilization/utilization.d.10000J.400X.50N.10S.YH", 'r') as f:
 
 print("CPU Utilization in C", np.percentile(c_cpu, 50), np.percentile(c_cpu, 90), np.percentile(c_cpu, 99))
 print("CPU Utilization in D", np.percentile(d_cpu, 50), np.percentile(d_cpu, 90), np.percentile(d_cpu, 99))
-
+'''
 # Arrange secafterepoch in ascending order.
 sorted_t_c_secafterepoch = sorted(t_c_secafterepoch.items(), key=lambda item: item[1])
 tail_c_time_sorted = []
@@ -395,3 +395,4 @@ plt.xlabel('Time')
 plt.title('Comparison of CPU Utilization and Tail Latencies over time in C and D')
 plt.legend()
 plt.show()
+'''
