@@ -2,7 +2,7 @@ import csv
 import numpy as np
 import collections
 import random
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, rcParams
 from collections import defaultdict
 from palettable.colorbrewer.qualitative import Set2_7
 
@@ -87,6 +87,16 @@ with open("results/jrt/d.10000J.1000X.50N.10S.YH", 'r') as f:
         jrt = float(r[4])
         d[1000].append(jrt)
 
+params = {
+   'axes.labelsize': 10,
+   'font.size': 10,
+   'legend.fontsize': 10.5,
+   'xtick.labelsize': 10,
+   'ytick.labelsize': 10,
+   'text.usetex': False,
+   #'figure.figsize': [10, 3]
+}
+rcParams.update(params)
 #Show Percentiles
 percentiles=['50', '90', '99']
 x=np.arange(len(percentiles))
@@ -95,7 +105,7 @@ fig, ax = plt.subplots()
 yc_200= [int(np.percentile(c[200], 50)), int(np.percentile(c[200], 90)), int(np.percentile(c[200], 99))]
 yd_200= [int(np.percentile(d[200], 50)), int(np.percentile(d[200], 90)), int(np.percentile(d[200], 99))]
 y=[int(100*(j-i)/i) for i,j in zip(yd_200, yc_200)]
-rects1= ax.bar(x-width/3 + x, y, width, label="Centralized 400 TPS", color=colors[0])
+rects1= ax.bar(x-width/3 + x, y, width, label="400 TPS", color=colors[0])
 #addlabels(y, 1)
 #rects2= ax.bar(x+width/2, y,  width, label="Decentralized 400 TPS", color=colors[1])
 #addlabels(y, 0)
@@ -112,7 +122,7 @@ addlabels(y,4)
 yc_600= [int(np.percentile(c[600], 50)), int(np.percentile(c[600], 90)), int(np.percentile(c[600], 99))]
 yd_600= [int(np.percentile(d[600], 50)), int(np.percentile(d[600], 90)), int(np.percentile(d[600], 99))]
 y=[int(100*(j-i)/i) for i,j in zip(yd_600, yc_600)]
-rects1= ax.bar(x + 2*width/3 + x, y, width, label="Centralized 1200 TPS",color=colors[2])
+rects1= ax.bar(x + 2*width/3 + x, y, width, label="1200 TPS",color=colors[2])
 #addlabels(y,2)
 #rects2= ax.bar(x+width/2 + 8, y, width, label="Decentralized 1200 TPS", color=colors[3])
 #addlabels(y,8)
@@ -129,7 +139,7 @@ addlabels(y,12)
 yc_1000= [int(np.percentile(c[1000], 50)), int(np.percentile(c[1000], 90)), int(np.percentile(c[1000], 99))]
 yd_1000= [int(np.percentile(d[1000], 50)), int(np.percentile(d[1000], 90)), int(np.percentile(d[1000], 99))]
 y=[int(100*(j-i)/i) for i,j in zip(yd_1000, yc_1000)]
-rects1= ax.bar(x+ 5*width/3 + x, y, width, label="Centralized 2000 TPS",color=colors[4])
+rects1= ax.bar(x+ 5*width/3 + x, y, width, label="2000 TPS",color=colors[4])
 #addlabels(y,3)
 #rects2= ax.bar(x+width/2 + 16, y, width, label="Decentralized 2000 TPS", color=colors[5])
 #addlabels(y,16)
