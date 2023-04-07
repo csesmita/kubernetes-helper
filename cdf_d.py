@@ -20,7 +20,7 @@ colors = Set2_7.mpl_colors
 tct = []
 tail_tct = []
 #29.0950625  estimated_task_duration:  19  by_def:  0  total_job_running_time:  29.0015 job_start: 0.09356249999999999 job_end: 29.0950625 average TCT 19.0950625 tail TCT 29.0950625
-with open("/home/sv440/Android/eagle/simulation/s.14.10X.tail_analysis",'r') as f:
+with open("/home/sv440/Android/eagle/simulation/results/sparrow_tail/s.14.10X.tail_analysis",'r') as f:
     for line in f:
         if "Total time elapsed in the DC" in line:
             continue
@@ -58,24 +58,25 @@ fig = plt.figure()
 #Take the list of average task completions per job. Sort them. Plot as CDF.
 c = np.sort(tct)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
-plt.plot(c, cp, label="TCT averaged per job", linewidth=2, color=colors[0], alpha=0.5, marker='d', markersize=3)
+plt.plot(c, cp, label="Average TCT per job", linewidth=2, color=colors[0], alpha=0.5, marker='d', markersize=3)
 c = np.sort(tail_tct)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
 plt.plot(c, cp, label="Tail TCT", linewidth=2, color=colors[1], alpha=0.5, marker='o', markersize=3)
 c_xt_list = list(c_job_xt_list.values())
 c = np.sort(c_xt_list)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
-plt.plot(c, cp, label="Total task execution times averaged per job", linestyle=':', linewidth=2, color=colors[2])
+plt.plot(c, cp, label="Average TST per job", linestyle=':', linewidth=2, color=colors[2])
 plt.xlabel('Time Elapsed [seconds]')
 plt.ylabel('CDF')
+plt.xscale('log')
 legend = plt.legend()
 frame = legend.get_frame()
 frame.set_facecolor('1.0')
 frame.set_edgecolor('1.0')
 plt.ylim(0.0, 1.1)
-plt.xticks(np.arange(0, 60001, 30000))
+#plt.xticks(np.arange(0, 60001, 30000))
 #plt.show()
 fig.tight_layout()
 fig.savefig('sparrow_task_completion_time.pdf', dpi=fig.dpi, bbox_inches='tight')
-print("Completion time across all tasks", np.percentile(tct,50))
-print("Completion time across tail tasks", np.percentile(tail_tct, 50))
+print("Completion time across all tasks", np.percentile(tct,50), np.percentile(tct,90), np.percentile(tct,99))
+print("Completion time across tail tasks", np.percentile(tail_tct, 50), np.percentile(tail_tct, 90), np.percentile(tail_tct, 99))

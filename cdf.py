@@ -2,59 +2,11 @@ import csv
 import numpy as np
 import collections
 import random
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, rcParams
 from collections import defaultdict
+from palettable.colorbrewer.qualitative import Set2_7
 
-###########################################################################
-# The first part of the script analyzes the job response time.
-###########################################################################
-c=[]
-d=[]
-jobids=[]
-jobid = 0
-with open("results/jrt/c.10000J.400X.50N.YH", 'r') as f:
-    for r in f:
-        if "has JRT" not in r:
-            continue
-        r= r.split()
-        jrt = float(r[4])
-        c.append(jrt)
-        jobid += 1
-        jobids.append(jobid)
-with open("results/jrt/d.10000J.400X.50N.10S.YH", 'r') as f:
-    for r in f:
-        if "has JRT" not in r:
-            continue
-        r = r.split()
-        jrt = float(r[4])
-        d.append(jrt)
-
-assert(len(c) == len(d))
-#Show raw unsorted data
-plt.plot(jobids, c, 'b', label="Centralized")
-plt.plot(jobids, d, 'r--', label="Decentralized")
-plt.xlabel('Job Ids')
-plt.ylabel('Job Response Times Raw Data')
-plt.title('JRT Raw Data')
-plt.legend()
-plt.show()
-
-c=np.sort(c)
-d=np.sort(d)
-cp = 1. * np.arange(len(c)) / (len(c) - 1)
-dp = 1. * np.arange(len(d)) / (len(d) - 1)
-
-#Show CDF
-plt.plot(c, cp, 'b', label="Centralized")
-plt.plot(d, dp, 'r--', label="Decentralized")
-plt.xlabel('Job Response Times')
-plt.title('Job Response Times CDF')
-plt.ylabel('CDF')
-plt.legend()
-plt.show()
-
-print("[50,90,99] Percentiles for Centralized - ", np.percentile(c, 50), np.percentile(c, 90), np.percentile(c, 99))
-print("[50,90,99] Percentiles for Decentralized - ", np.percentile(d, 50), np.percentile(d, 90), np.percentile(d, 99))
+colors = Set2_7.mpl_colors
 
 ###########################################################################
 # The second part of the script analyzes the pod queue and scheduling times.
@@ -193,8 +145,8 @@ cp = 1. * np.arange(len(c)) / (len(c) - 1)
 dp = 1. * np.arange(len(d)) / (len(d) - 1)
 
 #Show CDF
-plt.plot(c, cp, 'b', label="Centralized")
-plt.plot(d, dp, 'r--', label="Decentralized")
+plt.plot(c, cp, 'b', label="Kubernetes")
+plt.plot(d, dp, 'r--', label="Murmuration")
 plt.xlabel('Tail Task Queue Times')
 plt.title('Tail Task Queue Times CDF')
 plt.ylabel('CDF')
@@ -218,8 +170,8 @@ for jobname in d_job_sq_dev.keys():
     d_max.append(max(tasks_sq) - min(tasks_sq))
 print("Maximum wait time variance across tasks of a job (C)", np.percentile(c_max,50), np.percentile(c_max,90), np.percentile(c_max,99))
 print("Maximum wait time variance across tasks of a job (D)", np.percentile(d_max,50), np.percentile(d_max,90), np.percentile(d_max,99))
-plt.plot(c_max, 'b', label="Centralized")
-plt.plot(d_max,'r--', label="Decentralized")
+plt.plot(c_max, 'b', label="Kubernetes")
+plt.plot(d_max,'r--', label="Murmuration")
 plt.ylabel('Maximum Difference in task queue times in a job')
 plt.title('Maximum Queue Time variance distribution across tasks of a job')
 plt.legend()
@@ -230,7 +182,7 @@ plt.show()
 percentiles=['50', '90', '99']
 x=np.arange(len(percentiles))
 width=0.35
-fig, ax = plt.subplots()
+fig1, ax = plt.subplots()
 rects1= ax.bar(x-width/2, [np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99)], width, label="Centralized")
 rects2= ax.bar(x+width/2, [np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99)], width, label="Decentralized")
 ax.set_ylabel("Percentile Scheduler and Kubelet Queue Time")
@@ -239,7 +191,7 @@ ax.set_xticklabels(percentiles)
 ax.legend()
 #ax.bar_label(rects1, padding=3)
 #ax.bar_label(rects2, padding=3)
-fig.tight_layout()
+fig1.tight_layout()
 plt.show()
 print("Number of pods evaluated (C)", len(c_sq_list), "and max wait time (C)", max(c_sq_list))
 print("Number of pods evaluated (D)", len(d_q_list), "and max wait time (D)", max(d_q_list))
@@ -254,8 +206,8 @@ c = np.sort(c_sq_list)
 
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
 dp = 1. * np.arange(len(d)) / (len(d) - 1)
-plt.plot(c, cp, 'b', label="Centralized")
-plt.plot(d, dp, 'r--', label="Decentralized")
+plt.plot(c, cp, 'b', label="Kubernetes")
+plt.plot(d, dp, 'r--', label="Murmuration")
 plt.xlabel('All Task Queue Times')
 plt.title('All Task Queue Times CDF')
 plt.ylabel('CDF')
@@ -276,7 +228,7 @@ d_q_list = list(d_job_q_list.values())
 percentiles=['50', '90', '99']
 x=np.arange(len(percentiles))
 width=0.35
-fig, ax = plt.subplots()
+fig1, ax = plt.subplots()
 rects1= ax.bar(x-width/2, [np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99)], width, label="Centralized")
 rects2= ax.bar(x+width/2, [np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99)], width, label="Decentralized")
 #ax.bar_label(rects1, padding=3, fmt="%d")
@@ -285,34 +237,113 @@ ax.set_ylabel("Percentile Scheduler and Kubelet Queue Time Per Job")
 ax.set_xticks(x)
 ax.set_xticklabels(percentiles)
 ax.legend()
-fig.tight_layout()
+fig1.tight_layout()
 plt.show()
 print("[50,90,99] Percentiles for Centralized Scheduler Queue Time Per Job- ", np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time Per Job- ", np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99))
 
+
 print("################")
+###########################################################################
+# The first part of the script analyzes the job response time.
+###########################################################################
+c=[]
+d=[]
+jobids=[]
+jobid = 0
+with open("results/jrt/c.10000J.400X.50N.YH", 'r') as f:
+    for r in f:
+        if "has JRT" not in r:
+            continue
+        r= r.split()
+        jrt = float(r[4])
+        c.append(jrt)
+        jobid += 1
+        jobids.append(jobid)
+with open("results/jrt/d.10000J.400X.50N.10S.YH", 'r') as f:
+    for r in f:
+        if "has JRT" not in r:
+            continue
+        r = r.split()
+        jrt = float(r[4])
+        d.append(jrt)
+params = {
+   'axes.labelsize': 12,
+   'font.size': 12,
+   'legend.fontsize': 12,
+   'xtick.labelsize': 12,
+   'ytick.labelsize': 12,
+   'text.usetex': False,
+   #'figure.figsize': [10, 3]
+}
+rcParams.update(params)
+
+
+
+assert(len(c) == len(d))
+#Show raw unsorted data
+plt.plot(jobids, c, 'b', label="Centralized")
+plt.plot(jobids, d, 'r--', label="Decentralized")
+plt.xlabel('Job Ids')
+plt.ylabel('Job Response Times Raw Data')
+plt.title('JRT Raw Data')
+plt.legend()
+plt.show()
+
+c=np.sort(c)
+d=np.sort(d)
+cp = 1. * np.arange(len(c)) / (len(c) - 1)
+dp = 1. * np.arange(len(d)) / (len(d) - 1)
+#Show CDF
+#fig, (ax1, ax2) = plt.subplots(1,2)
+fig, ax1 = plt.subplots()
+ax1.plot(c, cp, 'b', label="Kubernetes", color=colors[0])
+ax1.plot(d, dp, 'r--', label="Murmuration", color=colors[1])
+ax1.set_xlabel('Job Completion Times (s)')
+ax1.set_ylabel('CDF')
+#ax1.set_xticks(ticks=[0,10000,20000,30000,40000,50000,60000], labels=["0","10","20","30","40","50","60"])
+#ax1.title.set_text("JCT Comparison")
+ax1.legend()
+fig.tight_layout()
+fig.savefig('cdf_tail_400X_a.pdf', dpi=fig.dpi, bbox_inches='tight')
+
+print("[50,90,99] Percentiles for Centralized - ", np.percentile(c, 50), np.percentile(c, 90), np.percentile(c, 99))
+print("[50,90,99] Percentiles for Decentralized - ", np.percentile(d, 50), np.percentile(d, 90), np.percentile(d, 99))
+
+
+
 c_sq_list = list(t_c_job_sq_list.values())
 d_q_list = list(t_d_job_q_list.values())
+fig, ax2 = plt.subplots()
 ### Next show the percentiles of individual pods over their respective jobs.
 #Scheduler Queue Times vs. (Scheduler Queue + Kubelet Queue Times).
 percentiles=['50', '90', '99']
-x=np.arange(len(percentiles))
+systems=['Kubernetes', 'Murmuration']
+x=np.arange(len(systems))
 width=0.35
-fig, ax = plt.subplots()
-rects1= ax.bar(x-width/2, [np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99)], width, label="Centralized")
-rects2= ax.bar(x+width/2, [np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99)], width, label="Decentralized")
+#fig, ax = plt.subplots()
+#rects1= ax2.bar(x-width/2, [np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99)], width, label="Centralized", color=colors[0])
+rects1= ax2.bar(x-width/3 + x, [np.percentile(c_sq_list, 50), np.percentile(d_q_list, 50)], width, label="50th %ile", color=colors[0])
+rects2= ax2.bar(x+2*width/3 + x, [np.percentile(c_sq_list, 90), np.percentile(d_q_list, 90)], width, label="90th %ile", color=colors[1])
+rects3= ax2.bar(x+5*width/3 + x, [np.percentile(c_sq_list, 99), np.percentile(d_q_list, 99)], width, label="99th %ile", color=colors[2])
+#rects2= ax2.bar(x+width/2, [np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99)], width, label="Decentralized", color=colors[1])
 #ax.bar_label(rects1, padding=3, fmt="%d")
 #ax.bar_label(rects2, padding=3, fmt="%d")
-ax.set_ylabel("Percentile Scheduler and Kubelet Queue Time For Tail Task of Jobs")
-ax.set_xticks(x)
-ax.set_xticklabels(percentiles)
-ax.legend()
+ax2.set_ylabel("Wait times (s)")
+#ax2.title.set_text("(TST + w2s) comparison for tail tasks")
+ax2.set_xticks([2*width/3, 2+2*width/3])
+#ax2.set_yticks(ticks=[0,5000,10000,15000,20000,25000,30000], labels=["0","5","10","15","20","25","30"])
+ax2.set_xticklabels(systems)
+ax2.legend()
 fig.tight_layout()
-plt.show()
+#plt.show()
+fig.savefig('cdf_tail_400X_b.pdf', dpi=fig.dpi, bbox_inches='tight')
+print(fig.get_size_inches())
 print("[50,90,99] Percentiles for Centralized Scheduler Queue Time Per Job Tail Tasks - ", np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time Per Job Tail Tasks - ", np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99))
 print("################")
 
+'''
 # NAME                                                        CPU(cores)   CPU%        MEMORY(bytes)   MEMORY%     
 # node1.sv440-128429.decentralizedsch-pg0.utah.cloudlab.us    35844m       56%         2656Mi          2%
 c_cpu = []
@@ -359,7 +390,6 @@ with open("results/utilization/utilization.d.10000J.400X.50N.10S.YH", 'r') as f:
 
 print("CPU Utilization in C", np.percentile(c_cpu, 50), np.percentile(c_cpu, 90), np.percentile(c_cpu, 99))
 print("CPU Utilization in D", np.percentile(d_cpu, 50), np.percentile(d_cpu, 90), np.percentile(d_cpu, 99))
-'''
 # Arrange secafterepoch in ascending order.
 sorted_t_c_secafterepoch = sorted(t_c_secafterepoch.items(), key=lambda item: item[1])
 tail_c_time_sorted = []
