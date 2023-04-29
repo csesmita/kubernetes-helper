@@ -105,6 +105,7 @@ Additional Notes -
 
 
 Changing binary of the scheduler - 
+0. Ensure scheduler is built with changes from fit.go to remove 110 pod limit. Ensure that kubelet is not built with this diff since only a 110 pods should be running at anytime on the kubelet and the rest should be in worker queue.
 1. Build new binary and copy into caelum-104.
 sv440@caelum-104:~$ cat Dockerfile-scheduler
 FROM gcr.io/distroless/base-debian10:latest
