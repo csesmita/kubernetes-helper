@@ -70,7 +70,7 @@ def process_pod_scheduling_params(compiled, jobname):
                         qtime = timeDiff(queue_time, default_time)
                         algotime = timeDiff(scheduling_algorithm_time, default_time)
                         kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time))
+                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
                 kubelet_queue_time = timedelta(microseconds=0)
@@ -186,7 +186,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 qtime = timeDiff(queue_time, default_time)
                 algotime = timeDiff(scheduling_algorithm_time, default_time)
                 kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time))
+            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time))
 
     os.remove(filename)
     return_results.insert(0, (jobname, job_start_time, job_end_time, tail_task))
@@ -198,8 +198,8 @@ def complete_processing(results):
     count = 0
     jobname = ""
     for r in results:
-        if len(r) == 9:
-            # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles)
+        if len(r) == 10:
+            # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time)
             discarded = r[5]
             if discarded == True:
                 pods_discarded += 1
@@ -213,19 +213,21 @@ def complete_processing(results):
             execution_time = r[6]
             scheduling_cycles = r[7]
             queue_add_time = r[8]
+            pod_done_time = r[9]
             node_to_pod_count[nodename] += 1
             qtimes.append(qtime)
             algotimes.append(algotime)
             kubeletqtimes.append(kubeletqtime)
             scheduling_cycles_per_pod.append(scheduling_cycles)
             diff = timeDiff((queue_add_time- job_start_time), default_time)
+            tc_time = timeDiff((pod_done_time - job_start_time), default_time)
             if epoch_start > queue_add_time:
                 epoch_start = queue_add_time
             queue_add_time_abs = timeDiff(queue_add_time - epoch_start, default_time)
             if podname == tail_task:
-                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs, "TAIL TASK")
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs, "TaskCompletionTime", tc_time, "TAIL TASK")
             else:
-                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs)
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs, "TaskCompletionTime", tc_time)
         elif len(r) == 4:
             jobname = r[0]
             job_start_time = r[1]
