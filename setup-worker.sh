@@ -3,6 +3,7 @@
 numnodes=$1
 #Don't include node0 since it is already setup as master node.
 for (( i=1; i<=$numnodes; i++ ))
+#for node in "${arr[@]}"
 do
     node="node$i"
     ssh-keyscan $node >> $HOME/.ssh/known_hosts
