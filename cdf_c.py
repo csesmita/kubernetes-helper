@@ -99,7 +99,7 @@ params = {
    'xtick.labelsize': 12,
    'ytick.labelsize': 12,
    'text.usetex': False,
-   #'figure.figsize': [10, 3.5]
+   'figure.figsize': [6, 3.4]
 }
 rcParams.update(params)
 #CDF of tail tasks.
@@ -124,6 +124,7 @@ cp = 1. * np.arange(len(c)) / (len(c) - 1)
 ax_jct.plot(c, cp, label="Average TST", linestyle='-.', color=colors[0])
 c_completion_list = list(c_job_completion_list.values())
 t_c_completion_list = list(t_c_job_completion_list.values())
+print("Median Kubernetes Average TCT", np.percentile(c_completion_list, 50))
 c = np.sort(c_completion_list)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
 #plt.plot(c, cp, label="Completion Time for Tasks across Jobs", linewidth=5, color='cyan', alpha=0.5)
@@ -148,14 +149,15 @@ frame.set_edgecolor('1.0')
 ax_jct.set_ylim(0.0, 1.1)
 #plt.xticks(np.arange(0, 60001, 30000))
 #plt.show()
-#fig.tight_layout()
+fig.tight_layout()
 #fig.savefig('task_completion_time.pdf', dpi=fig.dpi, bbox_inches='tight')
 print(fig.dpi)
-fig.savefig('c_d_tail_tc_1sec.pdf', dpi=fig.dpi, bbox_inches='tight')
+fig.savefig('c_d_tail_tc_a.pdf', dpi=fig.dpi, bbox_inches='tight')
 print("Scheduler Queue time across all tasks of jobs", np.percentile(c_sq_list,50), np.percentile(c_sq_list,90), np.percentile(c_sq_list,99))
 print("Scheduler Queue time across tail tasks of jobs", np.percentile(t_c_sq_list,50), np.percentile(t_c_sq_list,90), np.percentile(t_c_sq_list,99))
 print("Completion time across all tasks", np.percentile(c_completion_list,50), np.percentile(c_completion_list,90), np.percentile(c_completion_list,99))
 print("Completion time across tail tasks", np.percentile(t_c_completion_list,50), np.percentile(t_c_completion_list,90), np.percentile(t_c_completion_list,99))
+print("Execution time of tasks", np.percentile(c_xt_list,50), np.percentile(c_xt_list,90), np.percentile(c_xt_list,99))
 print("################")
 
 # NAME                                                        CPU(cores)   CPU%        MEMORY(bytes)   MEMORY%     
@@ -214,8 +216,8 @@ for idx in list(range(max_buckets)):
         continue
     dtail_c_time_sorted[grid[idx]] =  np.percentile(bins[idx], 99)
     s[grid[idx]] = len(bins[idx])
-'''
-#fig, ax1 = plt.subplots()
+
+fig, ax_tail = plt.subplots()
 ax_tail2 = ax_tail.twinx()
 dc_cpu = sorted(dc_cpu.items())
 dtail_c_time_sorted = sorted(dtail_c_time_sorted.items())
@@ -238,27 +240,31 @@ ax_tail2.set_ylabel('Tail TST (seconds)', color=colors[1])
 ax_tail2.set_ylim(0, 40000)
 ax_tail2.set_yticks(np.arange(0, 50000 , 10000))    
 ax_tail2.set_xscale('log')
-ax_tail.text(0.5,-0.4, "(b)", size=12, ha="center", transform=ax_tail.transAxes)
+#ax_tail.text(0.5,-0.4, "(b)", size=12, ha="center", transform=ax_tail.transAxes)
 #legend = plt.legend([l1, l2, l3], ["Average CPU Utilization on Workers", "99th %ile Tail Task Scheduler Times", "Trend Line for Tail Task Scheduler Times"])
-legend = plt.legend([l1, l2], ["Average CPU Utilization on Workers", "99th %ile Tail TST"])
+legend = plt.legend([l1, l2], ["Average CPU Utilization on Nodes", "99th %ile Tail TST"], framealpha=0.5)
 frame = legend.get_frame()
 frame.set_facecolor('1.0')
 frame.set_edgecolor('1.0')
+fig.tight_layout()
+fig.savefig('c_d_tail_tc_u.pdf', dpi=fig.dpi, bbox_inches='tight')
 #plt.title('Comparison of CPU Utilization and Tail Latencies over time')
 #plt.show()
-'''
 
 ###Distributed Scheduler
 # Scheduler Algorithm and Queue times, and the execution times.
 tct = []
+w2x = []
 tail_tct = []
 #29.0950625  estimated_task_duration:  19  by_def:  0  total_job_running_time:  29.0015 job_start: 0.09356249999999999 job_end: 29.0950625 average TCT 19.0950625 tail TCT 29.0950625
-with open("/home/sv440/Android/eagle/simulation/results/sparrow_tail/s.14.10X.tail_analysis",'r') as f:
+#with open("/home/sv440/Android/eagle/simulation/results/sparrow_tail/s.14.10X.tail_analysis",'r') as f:
+with open("/home/sv440/Android/eagle/simulation/results_new/jct/sparrow/YH/s.10000M",'r') as f:
     for line in f:
         if "Total time elapsed in the DC" in line:
             continue
         tct.append(float((line.split("average TCT")[1]).split()[0]))
         tail_tct.append(float((line.split("tail TCT")[1]).split()[0]))
+        w2x.append(float((line.split("average w2x")[1]).split()[0]))
 
 count_tasks = collections.defaultdict(int)
 c_job_xt_list=collections.defaultdict(float)
@@ -278,16 +284,20 @@ for jobname, num_tasks in count_tasks.items():
 #Take the list of average task completions per job. Sort them. Plot as CDF.
 fig, ax_tail = plt.subplots()
 ax_tail.minorticks_off()
+print("Median Sparrow Average TCT", np.percentile(tct, 50))
 c = np.sort(tct)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
-ax_tail.plot(c, cp, label="Average TCT per job", linewidth=2, color=colors[0], alpha=0.5, marker='d', markersize=3)
+ax_tail.plot(c, cp, label="Average TCT", linewidth=3, color=colors[0], alpha=0.75)
 c = np.sort(tail_tct)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
-ax_tail.plot(c, cp, label="Tail TCT", linewidth=2, color=colors[1], alpha=0.5, marker='o', markersize=3)
+ax_tail.plot(c, cp, label="Tail TCT", linewidth=3, color=colors[1])
+c = np.sort(w2x)
+cp = 1. * np.arange(len(c)) / (len(c) - 1)
+ax_tail.plot(c, cp, label="Average w2x", linewidth=3, color=colors[3], alpha=0.75)
 c_xt_list = list(c_job_xt_list.values())
 c = np.sort(c_xt_list)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
-ax_tail.plot(c, cp, label="Average TST per job", linestyle=':', linewidth=2, color=colors[2])
+ax_tail.plot(c, cp, label="Average TST", linestyle=':', linewidth=2, color=colors[2])
 ax_tail.set_xlabel('Duration (seconds)')
 #ax_tail.text(0.5,-0.25, "(b) Sparrow", size=12, ha="center", transform=ax_tail.transAxes)
 #ax_tail.set_xscale('log')
@@ -299,7 +309,7 @@ frame = legend.get_frame()
 frame.set_facecolor('1.0')
 frame.set_edgecolor('1.0')
 ax_tail.set_ylim(0.0, 1.1)
+ax_tail.set_ylabel('CDF')
 fig.tight_layout()
 #fig.savefig('c_tail_tc_util.pdf', dpi=fig.dpi, bbox_inches='tight')
-print(fig.dpi)
 fig.savefig('c_d_tail_tc_b.pdf', dpi=fig.dpi, bbox_inches='tight')

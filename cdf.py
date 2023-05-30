@@ -49,6 +49,8 @@ d_job_xt_list=collections.defaultdict(float)
 
 #Tail Tasks
 t_c_job_sq_list=collections.defaultdict(float)
+t_c_job_sq_list_noretry=collections.defaultdict(float)
+t_c_job_sq_list_1secretry=collections.defaultdict(float)
 t_c_job_sa_list=collections.defaultdict(float)
 t_c_job_xt_list=collections.defaultdict(float)
 
@@ -97,6 +99,32 @@ with open("results/pods/pods.c.10000J.400X.50N.YH",'r') as f:
             t_c_job_sa_list[jobname] += sa
             t_c_job_xt_list[jobname] += xt
             #t_c_secafterepoch[jobname] = float((line.split("SecAfterEpoch")[1]).split()[0])
+with open("results/pods/pods.c.10000J.400X.50N.YH.noretry",'r') as f:
+    for line in f:
+        if "SchedulerQueueTime" not in line:
+            continue
+        r = line.split()
+        sq = float(r[4])
+        sa = float(r[6])
+        xt = float(r[12])
+
+        podname = r[1]
+        jobname = r[1].split("-")[0]
+        if "TAIL TASK" in line:
+            t_c_job_sq_list_noretry[jobname] += sq
+with open("results/pods/pods.c.10000J.400X.50N.YH.1secretry",'r') as f:
+    for line in f:
+        if "SchedulerQueueTime" not in line:
+            continue
+        r = line.split()
+        sq = float(r[4])
+        sa = float(r[6])
+        xt = float(r[12])
+
+        podname = r[1]
+        jobname = r[1].split("-")[0]
+        if "TAIL TASK" in line:
+            t_c_job_sq_list_1secretry[jobname] += sq
 
 with open("results/pods/pods.d.10000J.400X.50N.10S.YH", 'r') as f:
     for line in f:
@@ -151,7 +179,7 @@ plt.xlabel('Tail Task Queue Times')
 plt.title('Tail Task Queue Times CDF')
 plt.ylabel('CDF')
 plt.legend()
-plt.show()
+#plt.show()
 print("################")
 
 #Difference in queue wait times across tasks of a job.
@@ -175,7 +203,7 @@ plt.plot(d_max,'r--', label="Murmuration")
 plt.ylabel('Maximum Difference in task queue times in a job')
 plt.title('Maximum Queue Time variance distribution across tasks of a job')
 plt.legend()
-plt.show()
+#plt.show()
 
 ### First show the percentiles of individual pods over the entire workload.
 #Scheduler Queue Times vs. (Scheduler Queue + Kubelet Queue Times).
@@ -192,7 +220,7 @@ ax.legend()
 #ax.bar_label(rects1, padding=3)
 #ax.bar_label(rects2, padding=3)
 fig1.tight_layout()
-plt.show()
+#plt.show()
 print("Number of pods evaluated (C)", len(c_sq_list), "and max wait time (C)", max(c_sq_list))
 print("Number of pods evaluated (D)", len(d_q_list), "and max wait time (D)", max(d_q_list))
 
@@ -212,7 +240,7 @@ plt.xlabel('All Task Queue Times')
 plt.title('All Task Queue Times CDF')
 plt.ylabel('CDF')
 plt.legend()
-plt.show()
+#plt.show()
 
 print("[50,90,99] Percentiles for Centralized Scheduler Queue Time- ", np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99))
 #print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time- ", np.percentile(d_sq_list, 50), np.percentile(d_sq_list, 90), np.percentile(d_sq_list, 99))
@@ -238,7 +266,7 @@ ax.set_xticks(x)
 ax.set_xticklabels(percentiles)
 ax.legend()
 fig1.tight_layout()
-plt.show()
+#plt.show()
 print("[50,90,99] Percentiles for Centralized Scheduler Queue Time Per Job- ", np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time Per Job- ", np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99))
 
@@ -248,6 +276,8 @@ print("################")
 # The first part of the script analyzes the job response time.
 ###########################################################################
 c=[]
+c_1secretry=[]
+c_noretry=[]
 d=[]
 jobids=[]
 jobid = 0
@@ -260,6 +290,21 @@ with open("results/jrt/c.10000J.400X.50N.YH", 'r') as f:
         c.append(jrt)
         jobid += 1
         jobids.append(jobid)
+with open("results/jrt/c.10000J.400X.50N.YH.noretry", 'r') as f:
+    for r in f:
+        if "has JRT" not in r:
+            continue
+        r= r.split()
+        jrt = float(r[4])
+        c_noretry.append(jrt)
+
+with open("results/jrt/c.10000J.400X.50N.YH.1secretry", 'r') as f:
+    for r in f:
+        if "has JRT" not in r:
+            continue
+        r= r.split()
+        jrt = float(r[4])
+        c_1secretry.append(jrt)
 with open("results/jrt/d.10000J.400X.50N.10S.YH", 'r') as f:
     for r in f:
         if "has JRT" not in r:
@@ -268,17 +313,20 @@ with open("results/jrt/d.10000J.400X.50N.10S.YH", 'r') as f:
         jrt = float(r[4])
         d.append(jrt)
 params = {
-   'axes.labelsize': 12,
-   'font.size': 12,
+   'axes.labelsize': 16,
+   'font.size': 16,
    'legend.fontsize': 12,
-   'xtick.labelsize': 12,
-   'ytick.labelsize': 12,
+   'xtick.labelsize': 16,
+   'ytick.labelsize': 16,
    'text.usetex': False,
-   #'figure.figsize': [10, 3]
+   'figure.figsize': [6,3.4]
 }
 rcParams.update(params)
 
-
+print("JRT Percentiles - c", np.percentile(c,50), np.percentile(c,99))
+print("JRT Percentiles - c_noretry", np.percentile(c_noretry,50), np.percentile(c_noretry,99))
+print("JRT Percentiles - c_1secretry", np.percentile(c_1secretry,50), np.percentile(c_1secretry,99))
+print("JRT Percentiles - d", np.percentile(d,50), np.percentile(d,99))
 
 assert(len(c) == len(d))
 #Show raw unsorted data
@@ -288,33 +336,77 @@ plt.xlabel('Job Ids')
 plt.ylabel('Job Response Times Raw Data')
 plt.title('JRT Raw Data')
 plt.legend()
-plt.show()
+#plt.show()
 
 c=np.sort(c)
+c_1secretry=np.sort(c_1secretry)
+c_noretry=np.sort(c_noretry)
 d=np.sort(d)
 cp = 1. * np.arange(len(c)) / (len(c) - 1)
+cp_noretry = 1. * np.arange(len(c_noretry)) / (len(c_noretry) - 1)
+cp_1secretry = 1. * np.arange(len(c_1secretry)) / (len(c_1secretry) - 1)
 dp = 1. * np.arange(len(d)) / (len(d) - 1)
 #Show CDF
 #fig, (ax1, ax2) = plt.subplots(1,2)
 fig, ax1 = plt.subplots()
-ax1.plot(c, cp, 'b', label="Kubernetes", color=colors[0])
-ax1.plot(d, dp, 'r--', label="Murmuration", color=colors[1])
+ax1.plot(c, cp, 'b', label="Kubernetes", color=colors[0], linewidth=3)
+ax1.plot(c_noretry, cp_noretry, 'b', label="Kubernetes w/ no retry", color=colors[4], linewidth=3, linestyle='dashdot')
+ax1.plot(c_1secretry, cp_1secretry, 'b', label="Kubernetes w/ 1s retry", color=colors[5], linewidth=3, linestyle='dotted')
+ax1.plot(d, dp, linestyle='--', label="Murmuration", color=colors[1], linewidth=3)
 ax1.set_xlabel('Job Completion Times (s)')
 ax1.set_ylabel('CDF')
 #ax1.set_xticks(ticks=[0,10000,20000,30000,40000,50000,60000], labels=["0","10","20","30","40","50","60"])
 #ax1.title.set_text("JCT Comparison")
-ax1.legend()
+legend = ax1.legend()
+frame = legend.get_frame()
+frame.set_facecolor('1.0')
+frame.set_edgecolor('1.0')
 fig.tight_layout()
-fig.savefig('cdf_tail_400X_a.pdf', dpi=fig.dpi, bbox_inches='tight')
+fig.savefig('c_d_jct.pdf', dpi=fig.dpi, bbox_inches='tight')
 
 print("[50,90,99] Percentiles for Centralized - ", np.percentile(c, 50), np.percentile(c, 90), np.percentile(c, 99))
+print("[50,90,99] Percentiles for Centralized w/ no retry- ", np.percentile(c_noretry, 50), np.percentile(c_noretry, 90), np.percentile(c_noretry, 99))
+print("[50,90,99] Percentiles for Centralized w/ 1s retry- ", np.percentile(c_1secretry, 50), np.percentile(c_1secretry, 90), np.percentile(c_1secretry, 99))
 print("[50,90,99] Percentiles for Decentralized - ", np.percentile(d, 50), np.percentile(d, 90), np.percentile(d, 99))
 
 
 
 c_sq_list = list(t_c_job_sq_list.values())
+c_sq_list_noretry = list(t_c_job_sq_list_noretry.values())
+c_sq_list_1secretry = list(t_c_job_sq_list_1secretry.values())
 d_q_list = list(t_d_job_q_list.values())
-fig, ax2 = plt.subplots()
+c=np.sort(c_sq_list)
+c_noretry=np.sort(c_sq_list_noretry)
+c_1secretry=np.sort(c_sq_list_1secretry)
+d=np.sort(d_q_list)
+cp = 1. * np.arange(len(c)) / (len(c) - 1)
+cp_noretry = 1. * np.arange(len(c_noretry)) / (len(c_noretry) - 1)
+cp_1secretry = 1. * np.arange(len(c_1secretry)) / (len(c_1secretry) - 1)
+dp = 1. * np.arange(len(d)) / (len(d) - 1)
+fig, ax_jct = plt.subplots()
+ax_jct.plot(c, cp, label="Kubernetes", linewidth=3, color=colors[0])
+ax_jct.plot(c_noretry, cp_noretry, label="Kubernetes w/ no retry queue", linestyle='dashdot', linewidth=3, color=colors[4])
+ax_jct.plot(c_1secretry, cp_1secretry, label="Kubernetes w/ 1s retry period", linestyle='dotted', linewidth=3, color=colors[5])
+ax_jct.plot(d, dp, label="Murmuration", linestyle='--', linewidth=3, color=colors[1])
+ax_jct.set_ylabel('CDF')
+#ax_jct.set_xscale('log')
+ax_jct.set_xlabel('Wait times (s)')
+#ax_jct.text(-0.75,-0.25, "(a) Kubernetes", size=12, ha="center", transform=ax_jct.transAxes)
+#plt.title('x and average and tail TST and TCT in Murmuration')
+legend = ax_jct.legend()
+frame = legend.get_frame()
+frame.set_facecolor('1.0')
+frame.set_edgecolor('1.0')
+ax_jct.set_ylim(0.0, 1.1)
+#plt.xticks(np.arange(0, 60001, 30000))
+fig.tight_layout()
+#fig.savefig('task_completion_time.pdf', dpi=fig.dpi, bbox_inches='tight')
+fig.savefig('c_d_twt.pdf', dpi=fig.dpi, bbox_inches='tight')
+print("Wait time Kubernetes", np.percentile(c,50), np.percentile(c,90), np.percentile(c,99))
+print("Wait time Kubernetes w/ no retry", np.percentile(c_noretry,50), np.percentile(c_noretry,90), np.percentile(c_noretry,99))
+print("Wait time Kubernetes w/ 1s retry", np.percentile(c_1secretry,50), np.percentile(c_1secretry,90), np.percentile(c_1secretry,99))
+print("Wait time Murmuration", np.percentile(d,50), np.percentile(d,90), np.percentile(d,99))
+'''
 ### Next show the percentiles of individual pods over their respective jobs.
 #Scheduler Queue Times vs. (Scheduler Queue + Kubelet Queue Times).
 percentiles=['50', '90', '99']
@@ -342,6 +434,7 @@ print(fig.get_size_inches())
 print("[50,90,99] Percentiles for Centralized Scheduler Queue Time Per Job Tail Tasks - ", np.percentile(c_sq_list, 50), np.percentile(c_sq_list, 90), np.percentile(c_sq_list, 99))
 print("[50,90,99] Percentiles for Decentralized Scheduler Queue Time Per Job Tail Tasks - ", np.percentile(d_q_list, 50), np.percentile(d_q_list, 90), np.percentile(d_q_list, 99))
 print("################")
+'''
 
 '''
 # NAME                                                        CPU(cores)   CPU%        MEMORY(bytes)   MEMORY%     
