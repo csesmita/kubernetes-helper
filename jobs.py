@@ -3,29 +3,28 @@ import rediswq
 import os
 import re
 import subprocess
-import asyncio
 from datetime import timedelta, datetime
 from time import sleep, time, mktime
 from threading import Timer
 from numpy import percentile
-from random import randint
+from random import randint, gauss
 import collections
 import sys
+import signal
 from kubernetes import client, config, utils
 from kubernetes.client.rest import ApiException
-from multiprocessing import Pool, Queue
 from math import ceil
 
 #TODO - Handle duplicate values when inserting into redis.
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
-SPEEDUP = 1000
+SPEEDUP = 10
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
-chunks = Queue()
 job_start_time = {}
 max_job_id = 0
+start_epoch = 0.0
 #Stats printed out.
 job_to_jrt = {}
 jrt = []
@@ -35,10 +34,12 @@ kubeletqtimes = []
 node_to_pod_count = collections.defaultdict(int)
 scheduler_to_algotimes = collections.defaultdict(int)
 jobnames = []
+jobs_pending = []
 config.load_kube_config()
 k8s_client = client.ApiClient()
+job_client = client.BatchV1Api()
 
-host = "10.109.250.147"
+host = "10.100.107.82"
 
 UTIL_LOG_INTERVAL = 120
 UTIL_LOG_NAME = "node_utilization.txt"
@@ -51,6 +52,7 @@ class RepeatTimer(Timer):
     def run(self):
         while not self.finished.wait(self.interval):
             self.function(*self.args, **self.kwargs)
+
 
 def extractDateTime(timestr):
     return datetime.strptime(timestr,'%H:%M:%S.%f')
@@ -78,6 +80,17 @@ def setup(is_central, num_sch):
         row = row.split()
         num_tasks = int(row[1])
         est_time = float(row[2])
+        while True:
+            #mis-est is a normal distribution of 15% on the mean and 50% on the 90th percentile (z-score=1.645) of the original estimate
+            misest = est_time * gauss(15.0, 30.395) / 100.0
+            #positive or negative misest?
+            sign = randint(0, 1)
+            if sign == 0:
+                est_time -= misest
+                if est_time > 0:
+                    break
+            else:
+                est_time += misest
         actual_duration = []
         for index in range(num_tasks):
             actual_duration.append(float(row[3+index]))
@@ -104,15 +117,21 @@ def setup(is_central, num_sch):
         q.rpush(actual_duration)
         q.disconnect()
         jobnames.append(jobstr)
+        jobs_pending.append(jobstr)
     f.close()
     return jobid
 
+t = RepeatTimer(UTIL_LOG_INTERVAL, log_node_util)
+def signal_handler(signal, frame):
+    post_process()
+    sys.exit(0)
+
 def main():
-    global max_job_id
+    global max_job_id, start_epoch
     jobid=0
-    start_epoch = 0.0
     threads = []
 
+    signal.signal(signal.SIGINT, signal_handler)
     if len(sys.argv) != 4:
         print("Incorrect number of parameters. Usage: python jobs.py d 10 -e")
         sys.exit(1)
@@ -125,7 +144,6 @@ def main():
     num_sch = int(sys.argv[2])
     max_job_id = setup(is_central, num_sch)
     print("Setup complete.")
-    num_processes = setup_chunks()
     # Process workload file
     f = open('temp.tr', 'r')
     for row in f:
@@ -150,79 +168,51 @@ def main():
     f.close()
 
     #Start logging node utilization
-    t = RepeatTimer(UTIL_LOG_INTERVAL, log_node_util)
     t.start()
 
     #Process scheduler stats.    
-    stats(num_processes)
-    t.cancel()
-    print("Script took a total of", time() - start_epoch,"s")
-
-#Set up job allocation for worker processes.
-#This evenly distributes events' load on processes.
-def setup_chunks():
-    global max_job_id
-    num_cpu = min(os.cpu_count() -1, 1)
-    start_index = 1
-    for i in range(num_cpu):
-        chunks.put(start_index)
-        if start_index == max_job_id:
-           return max_job_id
-        start_index += 1
-    return num_cpu
-
-#For this worker process, setup some process variables.
-def init_process(q, num_jobs, num_processes):
-    global all_jobs_jobwatch, jrt, job_to_jrt
-    start =  q.get()
-    # Global values to be used within the process.
-    all_jobs_jobwatch = [''.join(["job",str(n)]) for n in range(start, num_jobs + 1, num_processes)]
-    jrt = []
-    job_to_jrt = {}
+    stats()
 
 # Start the worker processes to catch job completion events.
-def stats(num_processes):
-    with Pool(processes=num_processes, initializer=init_process, initargs=(chunks, max_job_id, num_processes)) as p:
-        results=[]
-        #Create processes
-        for i in range(num_processes):
-            #Spin up the process
-            r = p.apply_async(get_job_and_pod_events, (), callback=stitch_partial_results)
-            #Remember to wait for results
-            results.append(r)
-        for r in results:
-            r.wait()
+def stats():
+    get_job_and_pod_events()
     post_process()
-
-def stitch_partial_results(partial_results):
-    global jrt
-    try:
-        partial_jrt, partial_job_to_jrt = partial_results[0]
-    except:
-        print("Got exception result from process as", partial_results)
-        return
-    if isinstance(partial_jrt, list):
-        jrt = jrt + partial_jrt
-        for jobname, job_completion in partial_job_to_jrt.items():
-            print("Job", jobname, "has JRT", job_completion)
-    else:
-        raise Exception("Got return result from process as", partial_jrt)
 
 def get_job_and_pod_events():
     # Watch for completed jobs.
-    job_client = client.BatchV1Api()
-    pod_client = client.CoreV1Api()
-    ioloop = asyncio.get_event_loop()
-    return ioloop.run_until_complete(gather_stats(pod_client, job_client))
+    process_completed_jobs()
 
-async def gather_stats(pod_client, job_client):
-    #coroutines = [process_completed_pods(pod_client, job_client), process_completed_jobs(job_client)]
-    coroutines = [process_completed_jobs(job_client)]
-    return await asyncio.gather(*coroutines, return_exceptions=True)
+# For running this along with the job creation threads, split creation and watch on
+# two different machines.
+def process_completed_jobs():
+    #Run the main job loop with the resource version.
+    #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
+    limit = 20
+    timeout_seconds = 5
+    job_events = job_client.list_namespaced_job(namespace='default', limit=limit)
+    while True:
+        if job_events != None:
+            continue_param = job_events.metadata._continue
+            last_resource_version = job_events.metadata.resource_version
+            #print("Jobs - Got", len(job_events.items),"events at version -",last_resource_version)
+            for job_object in job_events.items:
+                is_return = process_job_object(job_object, last_resource_version)
+                if is_return:
+                    return
+        job_events, e = get_job_events(limit, continue_param, timeout_seconds, last_resource_version)
+        if e != None:
+            # TODO - What if there are missed events between now and new resource version?
+            # Handle by actively querying for them.
+            if e.status == 410:
+                print("JOB - Caught resource version too old exception.")
+                last_resource_version = 0
+                continue_param = None
+            #else:
+            #raise e
 
-def process_job_object(job_object, job_client, last_resource_version):
+def process_job_object(job_object, last_resource_version):
     jobname = job_object.metadata.name
-    if jobname not in all_jobs_jobwatch:
+    if jobname not in jobs_pending:
         #We have finished processing this job.
         return False
     status = job_object.status
@@ -237,17 +227,18 @@ def process_job_object(job_object, job_client, last_resource_version):
     job_completion = completed_sec_from_epoch - job_start_time[jobname]
     jrt.append(job_completion)
     job_to_jrt[jobname] = job_completion
-    all_jobs_jobwatch.remove(jobname)
+    print("Job", jobname, "has JRT", job_completion)
+    jobs_pending.remove(jobname)
     job_client.delete_namespaced_job(name=jobname, namespace="default",
         body=client.V1DeleteOptions(
             grace_period_seconds=0,
             propagation_policy='Background'))
-    if len(all_jobs_jobwatch) == 0:
+    if len(jobs_pending) == 0:
         return True
     return False
 
 #Returns job_events and any exceptions raised
-async def get_job_events(job_client, limit, continue_param, timeout_seconds, last_resource_version):
+def get_job_events(limit, continue_param, timeout_seconds, last_resource_version):
     try:
         if continue_param != None:
             return job_client.list_namespaced_job(namespace='default', limit=limit, _continue=continue_param), None
@@ -257,35 +248,6 @@ async def get_job_events(job_client, limit, continue_param, timeout_seconds, las
         print("Exception", e)
         return None, e
 
-# For running this along with the job creation threads, split creation and watch on
-# two different machines.
-async def process_completed_jobs(job_client):
-    #Run the main job loop with the resource version.
-    #Only watch for completed jobs. Caution : This watch runs forever. So, actively break.
-    limit = 20
-    timeout_seconds = 5
-    job_events = job_client.list_namespaced_job(namespace='default', limit=limit)
-    while True:
-        if job_events != None:
-            continue_param = job_events.metadata._continue
-            last_resource_version = job_events.metadata.resource_version
-            #print("Jobs - Got", len(job_events.items),"events at version -",last_resource_version)
-            for job_object in job_events.items:
-                is_return = process_job_object(job_object, job_client, last_resource_version)
-                if is_return:
-                    return jrt, job_to_jrt
-        #print("Jobs watch yields")
-        await asyncio.sleep(0)
-        job_events, e = await get_job_events(job_client,limit, continue_param, timeout_seconds, last_resource_version)
-        if e != None:
-            # TODO - What if there are missed events between now and new resource version?
-            # Handle by actively querying for them.
-            if e.status == 410:
-                print("JOB - Caught resource version too old exception.")
-                last_resource_version = 0
-                continue_param = None
-            #else:
-            #raise e
 
 def post_process():
     print("Total number of jobs is", max_job_id)
@@ -296,6 +258,17 @@ def post_process():
         # Cleanup remnants of the run
         q.delete(jobname)
         q.disconnect()
+   
+    if len(jobs_pending) > 0:
+        for jobname in jobs_pending:
+            print("Deleting", jobname)
+            job_client.delete_namespaced_job(name=jobname, namespace="default",
+                body=client.V1DeleteOptions(
+                grace_period_seconds=0,
+                propagation_policy='Background'))
+    t.cancel()
+    print("Script took a total of", time() - start_epoch,"s")
+
 
 if __name__ == '__main__':
     main()
