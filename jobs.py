@@ -91,6 +91,7 @@ def setup(is_central, num_sch):
                     break
             else:
                 est_time += misest
+                break
         actual_duration = []
         for index in range(num_tasks):
             actual_duration.append(float(row[3+index]))
