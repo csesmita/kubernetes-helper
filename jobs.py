@@ -18,7 +18,7 @@ from math import ceil
 #TODO - Handle duplicate values when inserting into redis.
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
-SPEEDUP = 10
+SPEEDUP = 1000.0
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
@@ -91,6 +91,7 @@ def setup(is_central, num_sch):
                     break
             else:
                 est_time += misest
+                break
         actual_duration = []
         for index in range(num_tasks):
             actual_duration.append(float(row[3+index]))
@@ -146,12 +147,17 @@ def main():
     print("Setup complete.")
     # Process workload file
     f = open('temp.tr', 'r')
+    arrival_time = 0.0
     for row in f:
         row = row.split()
         startTime = time()
         if start_epoch == 0.0:
             start_epoch = startTime
-        arrival_time = float(row[0])/float(SPEEDUP)
+        while True:
+            speedup = gauss(SPEEDUP, SPEEDUP/2)
+            if speedup > 0:
+                break
+        arrival_time += 7.0/speedup
         jobid += 1
         jobstr = "job"+str(jobid)
         # Pick the correct job file.
@@ -160,9 +166,13 @@ def main():
         endTime = time()
         sleep_time = start_epoch + arrival_time - endTime
         if sleep_time > 0:
-            sleep(sleep_time)
+            try:
+                sleep(sleep_time)
+            except Exception as error:
+                print("Sleep hit an exception", error)
+                print("Sleep time was", sleep_time)
         job_start_time[jobstr] = time()
-        utils.create_from_yaml(k8s_client, filename)
+        #utils.create_from_yaml(k8s_client, filename)
         print("Starting", jobstr, "at", job_start_time[jobstr] - start_epoch)
 
     f.close()
@@ -250,7 +260,8 @@ def get_job_events(limit, continue_param, timeout_seconds, last_resource_version
 
 
 def post_process():
-    print("Total number of jobs is", max_job_id)
+    t.cancel()
+    print("Total number of jobs is", max_job_id - len(jobs_pending))
     print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
     print("Schedulers and number of tasks they assigned", schedulertojob)
     for jobname in jobnames:
@@ -266,7 +277,6 @@ def post_process():
                 body=client.V1DeleteOptions(
                 grace_period_seconds=0,
                 propagation_policy='Background'))
-    t.cancel()
     print("Script took a total of", time() - start_epoch,"s")
 
 
