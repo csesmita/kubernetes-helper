@@ -10,6 +10,8 @@ New Cluster Setup Steps -
 4. cd kubernetes-helper
 5. Run pre-master.sh
 
+# Create a New Token and Print Join Command for a Node
+kubeadm token create --print-join-command
 
 ### Reset an existing cluster
 First reset master and workers.
