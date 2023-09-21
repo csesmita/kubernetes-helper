@@ -18,7 +18,7 @@ from math import ceil
 #TODO - Handle duplicate values when inserting into redis.
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
-SPEEDUP = 1000.0
+SPEEDUP = 10.0
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
@@ -172,7 +172,7 @@ def main():
                 print("Sleep hit an exception", error)
                 print("Sleep time was", sleep_time)
         job_start_time[jobstr] = time()
-        #utils.create_from_yaml(k8s_client, filename)
+        utils.create_from_yaml(k8s_client, filename)
         print("Starting", jobstr, "at", job_start_time[jobstr] - start_epoch)
 
     f.close()
