@@ -82,7 +82,8 @@ wait
 echo "For scalability experiments, switch off syslogging in rsyslog conf files. Management - close UDP port option. In master and worker nodes, remove all rules."
 
 echo "If running C then delete all schedulers using kubectl delete -f scheduler_configs/. Copy in kubelet.c and run switch_kubelet.sh."
-echo "If running D then copy in kubelet and run switch_kubelet.sh. Let C scheduler remain as it schedules system pods. Also, check if desired number of schedulers are present in scheduler_config and are running."
+echo "If running D then copy in kubelet and run switch_kubelet.sh. Ensure all nodes are on the same version of kubelet."
+echo "Let C scheduler remain as it schedules system pods. Also, check if desired number of schedulers are present in scheduler_config and are running."
 echo "Update logging levels in scheduler config files, C and D"
 echo "C or D, change scheduler, kubelet and, job_c and job_d images if need be (jobbatch, none, etc.)"
 echo "Change job_c job_d is container resource limits are to be changed"
