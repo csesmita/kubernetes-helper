@@ -25,7 +25,7 @@ jrt = []
 all_intervals=[]
 
 def extractDateTime(timestr):
-    return datetime.strptime(timestr,'%m%d %H:%M:%S.%f')
+    return datetime.strptime(timestr,'%b %d %H:%M:%S')
 
 # Returns difference in two timedeltas in seconds
 def timeDiff(e1, s1):
@@ -70,7 +70,7 @@ def process_pod_scheduling_params(compiled, jobname):
                         qtime = timeDiff(queue_time, default_time)
                         algotime = timeDiff(scheduling_algorithm_time, default_time)
                         kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time))
+                    return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time, execution_start_time))
                 #Two (maybe three in decentralized case) outputs for this pod
                 queue_time = timedelta(microseconds=0)
                 kubelet_queue_time = timedelta(microseconds=0)
@@ -83,6 +83,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 attempt_bind_time = datetime.min
                 kubelet_queue_add_time = datetime.min
                 kubelet_queue_eject_time = datetime.min
+                execution_start_time = datetime.min
                 execution_time = 0.0
                 discarded = False
                 nodename="None"
@@ -168,6 +169,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 kubelet_queue_time = kubelet_queue_eject_time - kubelet_queue_add_time
                 continue
             if EXECUTION_LOG in log:
+                execution_start_time = extractDateTime(compiled.search(log).group(0))
                 # Working on 19.458. Extract the last field in the line.
                 execution_time = float(log.split()[-1])
                 continue
@@ -186,7 +188,7 @@ def process_pod_scheduling_params(compiled, jobname):
                 qtime = timeDiff(queue_time, default_time)
                 algotime = timeDiff(scheduling_algorithm_time, default_time)
                 kubeletqtime = timeDiff(kubelet_queue_time, default_time)
-            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time))
+            return_results.append((podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time, execution_start_time))
 
     os.remove(filename)
     return_results.insert(0, (jobname, job_start_time, job_end_time, tail_task))
@@ -198,8 +200,8 @@ def complete_processing(results):
     count = 0
     jobname = ""
     for r in results:
-        if len(r) == 10:
-            # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time)
+        if len(r) == 11:
+            # r = (podname, nodename, qtime, algotime, kubeletqtime, discarded, execution_time, scheduling_cycles, queue_add_time, pod_done_time, execution_start_time)
             discarded = r[5]
             if discarded == True:
                 pods_discarded += 1
@@ -214,6 +216,7 @@ def complete_processing(results):
             scheduling_cycles = r[7]
             queue_add_time = r[8]
             pod_done_time = r[9]
+            pod_execution_start_time = r[10]
             node_to_pod_count[nodename] += 1
             qtimes.append(qtime)
             algotimes.append(algotime)
@@ -225,9 +228,9 @@ def complete_processing(results):
                 epoch_start = queue_add_time
             queue_add_time_abs = timeDiff(queue_add_time - epoch_start, default_time)
             if podname == tail_task:
-                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs, "TaskCompletionTime", tc_time, "TAIL TASK")
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time, "TaskCompletionTime", tc_time, "TaskExecutionStartTime",pod_execution_start_time, "TAIL TASK")
             else:
-                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time_abs, "TaskCompletionTime", tc_time)
+                print("Pod", podname, "- SchedulerQueueTime", qtime,"SchedulingAlgorithmTime", algotime, "KubeletQueueTime", kubeletqtime, "Node", nodename, "ExecutionTime", execution_time, "NumSchedulingCycles", scheduling_cycles, "StartedSecAfter", diff, "QueueAddTime", queue_add_time, "TaskCompletionTime", tc_time, "TaskExecutionStartTime",pod_execution_start_time)
         elif len(r) == 4:
             jobname = r[0]
             job_start_time = r[1]
@@ -239,7 +242,7 @@ def complete_processing(results):
     if count < job_to_numtasks[jobname]:
         print("Job", jobname, "only has", count,"pods while the file enumerates", job_to_numtasks[jobname])
 
-pattern = '\d{2}\d{2} \d{2}:\d{2}:\d{2}\.\d{6}'
+pattern = '\w{3}\s*\d{1,2} \d{2}:\d{2}:\d{2}'
 compiled = re.compile(pattern)
 def process_interval(filepath):
     partial_intervals = []
