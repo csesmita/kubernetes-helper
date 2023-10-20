@@ -18,9 +18,9 @@ from math import ceil
 #TODO - Handle duplicate values when inserting into redis.
 #A dict for pods' watch to keep track of.
 job_to_podlist = collections.defaultdict(set)
-SPEEDUP = 50
+SPEEDUP = 1000
 #2 hours
-RUNTIME = 10800.0
+RUNTIME = 7200.0
 schedulertojob = collections.defaultdict(int)
 job_to_scheduler = {}
 job_to_numtasks = {}
@@ -41,7 +41,7 @@ config.load_kube_config()
 k8s_client = client.ApiClient()
 job_client = client.BatchV1Api()
 
-host = "10.109.69.207"
+host = "10.104.173.26"
 
 UTIL_LOG_INTERVAL = 120
 UTIL_LOG_NAME = "node_utilization.txt"
@@ -109,70 +109,6 @@ def setup_job(row, jobid, is_central, num_sch, job_tmpl):
     #print("Setup complete.Took", time() - setup_start_time)
     return filename
 
-'''
-def setup(is_central, num_sch, start_job_id):
-    setup_start_time = time()
-    # Read in the job template file
-    job_file = "job_d.yaml"
-    if is_central:
-        job_file = "job_c.yaml"
-        #print("CENTRALIZED SCHEDULER")
-    #else:
-        #print("DECENTRALIZED SCHEDULER")
-     
-    with open(job_file, 'r') as file :
-        job_tmpl = file.read()
-    jobid = start_job_id
-
-    # Process workload file
-    f = open('YH.tr', 'r')
-    for row in f:
-        row = row.split()
-        num_tasks = int(row[1])
-        est_time = float(row[2])
-        while True:
-            #mis-est is a normal distribution of 15% on the mean and 50% on the 90th percentile (z-score=1.645) of the original estimate
-            misest = est_time * gauss(15.0, 30.395) / 100.0
-            #positive or negative misest?
-            sign = randint(0, 1)
-            if sign == 0:
-                est_time -= misest
-                if est_time > 0:
-                    break
-            else:
-                est_time += misest
-                break
-        actual_duration = []
-        for index in range(num_tasks):
-            actual_duration.append(float(row[3+index]))
-        # Replace the template file with actual values
-        jobid += 1
-        jobstr = "".join(["job",str(jobid)])
-        job_to_numtasks[jobstr]=num_tasks
-        filedata = ""
-        if not is_central:
-            # Pick a number from 1 - num_sch. This job will be scheduled by that scheduler.
-            schedulername = "".join(["scheduler",str(randint(1,num_sch))])
-            schedulertojob[schedulername] += num_tasks
-            job_to_scheduler[jobstr] = schedulername
-            filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$SCHEDULER_NAME", schedulername).replace("$ESTRUNTIME", str(est_time))
-        else:
-            filedata = job_tmpl.replace('$JOBID',jobstr).replace("$NUM_TASKS",str(num_tasks)).replace("$ESTRUNTIME", str(est_time))
-            job_to_scheduler[jobstr] = "schedulera"
-        filename = jobstr+".yaml"
-        with open(filename, 'w') as file:
-          file.write(filedata)
-        q = rediswq.RedisWQ(name=jobstr, host=host)
-        # Cleanup possible remnants of an older run
-        q.delete(jobstr)
-        q.rpush(actual_duration)
-        q.disconnect()
-        jobnames.append(jobstr)
-    f.close()
-    print("Setup complete.Took", time() - setup_start_time)
-    return jobid
-'''
-
 t = RepeatTimer(UTIL_LOG_INTERVAL, log_node_util)
 def signal_handler(signal, frame):
     post_process()
@@ -188,27 +124,22 @@ def main():
         print("Incorrect number of parameters. Usage: python jobs.py d 10 -e")
         sys.exit(1)
 
-    '''
-    confirm=input("Has a screen been started? Type yes if so.")
-    if confirm!="yes":
-        sys.exit(1)
-    '''
-
     is_central = sys.argv[1] == 'c'
     # Read in the job template file
     job_file = "job_d.yaml"
     if is_central:
         job_file = "job_c.yaml"
-        #print("CENTRALIZED SCHEDULER")
-    #else:
-        #print("DECENTRALIZED SCHEDULER")
+        print("CENTRALIZED SCHEDULER")
+    else:
+        print("DECENTRALIZED SCHEDULER")
+
     with open(job_file, 'r') as file :
         job_tmpl = file.read()
 
     num_sch = int(sys.argv[2])
     #max_job_id = setup(is_central, num_sch, 0)
     # Process workload file
-    f = open('YH.tr', 'r')
+    f = open('temp.tr', 'r')
     arrival_time = 0.0
     startTime = time()
     #Start logging node utilization
@@ -227,7 +158,7 @@ def main():
                 if speedup > 0:
                     break
             #The median arrival of job in YH is 7.5 seconds.
-            arrival_time += 7.5/SPEEDUP
+            arrival_time += 7.5/speedup
             '''
             row = row.split()
             arrival_time = float(row[0]) / float(SPEEDUP)
@@ -236,42 +167,38 @@ def main():
             endTime = time()
             sleep_time = start_epoch + arrival_time - endTime
             if sleep_time > 0:
-                try:
-                    sleep(sleep_time)
-                except Exception as error:
-                    print("Sleep hit an exception", error)
-                    print("Sleep time was", sleep_time)
+                sleep(sleep_time)
             endTime = time()
             job_start_time[jobstr] = endTime
             utils.create_from_yaml(k8s_client, filename)
-            #print("Starting", jobstr, "at", job_start_time[jobstr] - start_epoch)
+            print("Starting", jobstr, "at", job_start_time[jobstr] - start_epoch)
             jobs_pending.append(jobstr)
             continue_param, last_resource_version  = process_completed_jobs(20, True, continue_param, last_resource_version)
             if endTime - start_epoch >= RUNTIME:
                 f.close()
                 break
+            max_job_id = jobid
+        '''
         try:
             f.seek(0)
-            #print("------RESTARTING WORKLOAD--------")
-            #setup(is_central, num_sch, max_job_id)
+            print("------RESTARTING WORKLOAD--------")
         except:
             break
+        '''
+        break
 
-    max_job_id = jobid
     print("Started", max_job_id, "jobs")
     #Process scheduler stats. 
-    stats()
+    stats(continue_param, last_resource_version)
 
 # Start the worker processes to catch job completion events.
-def stats():
-    #get_job_and_pod_events(20, False)
+def stats(continue_param, last_resource_version):
+    get_job_and_pod_events(20, False, continue_param, last_resource_version)
     post_process()
 
-'''
-def get_job_and_pod_events(limit, once):
+def get_job_and_pod_events(limit, once, continue_param, last_resource_version):
     # Watch for completed jobs.
-    process_completed_jobs(limit, once)
-'''
+    process_completed_jobs(limit, once, continue_param, last_resource_version)
 
 # For running this along with the job creation threads, split creation and watch on
 # two different machines.
@@ -291,6 +218,8 @@ def process_completed_jobs(limit, once, continue_param, last_resource_version):
                     return None, 0
             if once:
                 return continue_param, last_resource_version
+            if time() - start_epoch >= RUNTIME:
+                return None, 0
         job_events, e = get_job_events(limit, continue_param, timeout_seconds, last_resource_version)
         if e != None:
             # TODO - What if there are missed events between now and new resource version?
@@ -343,9 +272,9 @@ def get_job_events(limit, continue_param, timeout_seconds, last_resource_version
 
 def post_process():
     t.cancel()
-    print("Total number of jobs is", max_job_id - len(jobs_pending))
-    print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
-    #print("Schedulers and number of tasks they assigned", schedulertojob)
+    print("Total number of jobs completed is", len(jrt))
+    if len(jrt) > 0:
+        print("Stats for JRT -"",",percentile(jrt, 50), percentile(jrt, 90), percentile(jrt, 99))
     for jobname in jobnames:
         q = rediswq.RedisWQ(name=jobname, host=host)
         # Cleanup remnants of the run
