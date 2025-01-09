@@ -1,0 +1,141 @@
+This file processes the number of jobs present in temp.tr. Ensure that is fine.
+Evaluating jobs dict_keys(['job1000', 'job2000', 'job3000', 'job4000', 'job5000', 'job6000', 'job7000', 'job8000', 'job9000', 'job10000'])
+Job  job4000 has JRT 9264.0 started at 1900-08-08 07:25:08 and ended at 1900-08-08 09:59:32
+Job job4000 Pod job4000-0-kdw8c QueueAddTime 59945556308.0 ExecutionStartTime 59945556795.0 PodDoneTime 59945556816.0
+Job job4000 Pod job4000-2-z2jgq QueueAddTime 59945556309.0 ExecutionStartTime 59945559035.0 PodDoneTime 59945559052.0
+Job job4000 Pod job4000-1-p7r8w QueueAddTime 59945556309.0 ExecutionStartTime 59945565545.0 PodDoneTime 59945565572.0 TAIL TASK
+Job  job1000 has JRT 20.0 started at 1900-08-08 05:57:51 and ended at 1900-08-08 05:58:11
+Job job1000 Pod job1000-2-w9dzd QueueAddTime 59945551073.0 ExecutionStartTime 59945551076.0 PodDoneTime 59945551089.0
+Job job1000 Pod job1000-0-fv4j8 QueueAddTime 59945551071.0 ExecutionStartTime 59945551073.0 PodDoneTime 59945551087.0
+Job job1000 Pod job1000-1-hfkv9 QueueAddTime 59945551073.0 ExecutionStartTime 59945551075.0 PodDoneTime 59945551087.0
+Job job1000 Pod job1000-3-7fxtj QueueAddTime 59945551075.0 ExecutionStartTime 59945551078.0 PodDoneTime 59945551090.0
+Job job1000 Pod job1000-4-ckssr QueueAddTime 59945551075.0 ExecutionStartTime 59945551078.0 PodDoneTime 59945551091.0 TAIL TASK
+Job  job3000 has JRT 4165.0 started at 1900-08-08 06:56:20 and ended at 1900-08-08 08:05:45
+Job job3000 Pod job3000-0-c2x5w QueueAddTime 59945554580.0 ExecutionStartTime 59945558705.0 PodDoneTime 59945558724.0
+Job job3000 Pod job3000-1-g7wdb QueueAddTime 59945554581.0 ExecutionStartTime 59945558714.0 PodDoneTime 59945558745.0 TAIL TASK
+Job  job2000 has JRT 20691.0 started at 1900-08-08 06:25:57 and ended at 1900-08-08 12:10:48
+Job job2000 Pod job2000-30-pnnnb QueueAddTime 59945552760.0 ExecutionStartTime 59945552774.0 PodDoneTime 59945552785.0
+Job job2000 Pod job2000-13-cct8j QueueAddTime 59945552760.0 ExecutionStartTime 59945552809.0 PodDoneTime 59945552818.0
+Job job2000 Pod job2000-11-rx57k QueueAddTime 59945552760.0 ExecutionStartTime 59945552820.0 PodDoneTime 59945552829.0
+Job job2000 Pod job2000-26-2zb5c QueueAddTime 59945552761.0 ExecutionStartTime 59945552845.0 PodDoneTime 59945552850.0
+Job job2000 Pod job2000-25-lvgfs QueueAddTime 59945552760.0 ExecutionStartTime 59945552870.0 PodDoneTime 59945552878.0
+Job job2000 Pod job2000-29-d6cqg QueueAddTime 59945552761.0 ExecutionStartTime 59945552895.0 PodDoneTime 59945552903.0
+Job job2000 Pod job2000-34-9zzpw QueueAddTime 59945552762.0 ExecutionStartTime 59945552921.0 PodDoneTime 59945552928.0
+Job job2000 Pod job2000-33-pxmbx QueueAddTime 59945552762.0 ExecutionStartTime 59945552922.0 PodDoneTime 59945552929.0
+Job job2000 Pod job2000-22-5rd2p QueueAddTime 59945552760.0 ExecutionStartTime 59945552933.0 PodDoneTime 59945552940.0
+Job job2000 Pod job2000-20-96gd4 QueueAddTime 59945552761.0 ExecutionStartTime 59945552972.0 PodDoneTime 59945552980.0
+Job job2000 Pod job2000-23-jl925 QueueAddTime 59945552760.0 ExecutionStartTime 59945552984.0 PodDoneTime 59945552991.0
+Job job2000 Pod job2000-16-7k9wn QueueAddTime 59945552761.0 ExecutionStartTime 59945552986.0 PodDoneTime 59945552998.0
+Job job2000 Pod job2000-28-ktkjw QueueAddTime 59945552761.0 ExecutionStartTime 59945552998.0 PodDoneTime 59945553005.0
+Job job2000 Pod job2000-10-klkkv QueueAddTime 59945552760.0 ExecutionStartTime 59945553010.0 PodDoneTime 59945553024.0
+Job job2000 Pod job2000-31-s6zwd QueueAddTime 59945552762.0 ExecutionStartTime 59945553093.0 PodDoneTime 59945553101.0
+Job job2000 Pod job2000-17-k5p5m QueueAddTime 59945552761.0 ExecutionStartTime 59945553118.0 PodDoneTime 59945553127.0
+Job job2000 Pod job2000-14-nrjcf QueueAddTime 59945552759.0 ExecutionStartTime 59945553223.0 PodDoneTime 59945553231.0
+Job job2000 Pod job2000-15-tcn55 QueueAddTime 59945552761.0 ExecutionStartTime 59945553293.0 PodDoneTime 59945553305.0
+Job job2000 Pod job2000-9-kjsg8 QueueAddTime 59945552760.0 ExecutionStartTime 59945553308.0 PodDoneTime 59945553314.0
+Job job2000 Pod job2000-24-7zlnd QueueAddTime 59945552760.0 ExecutionStartTime 59945553445.0 PodDoneTime 59945553450.0
+Job job2000 Pod job2000-12-b7rzg QueueAddTime 59945552760.0 ExecutionStartTime 59945553509.0 PodDoneTime 59945553516.0
+Job job2000 Pod job2000-19-m9f2g QueueAddTime 59945552761.0 ExecutionStartTime 59945553534.0 PodDoneTime 59945553541.0
+Job job2000 Pod job2000-18-4dz84 QueueAddTime 59945552761.0 ExecutionStartTime 59945553534.0 PodDoneTime 59945553542.0
+Job job2000 Pod job2000-35-wkkwc QueueAddTime 59945552762.0 ExecutionStartTime 59945553536.0 PodDoneTime 59945553544.0
+Job job2000 Pod job2000-6-6pmlv QueueAddTime 59945552759.0 ExecutionStartTime 59945553554.0 PodDoneTime 59945553560.0
+Job job2000 Pod job2000-1-x5vt2 QueueAddTime 59945552758.0 ExecutionStartTime 59945553658.0 PodDoneTime 59945553671.0
+Job job2000 Pod job2000-27-bchz2 QueueAddTime 59945552761.0 ExecutionStartTime 59945553724.0 PodDoneTime 59945553732.0
+Job job2000 Pod job2000-3-f7jxt QueueAddTime 59945552759.0 ExecutionStartTime 59945553811.0 PodDoneTime 59945553820.0
+Job job2000 Pod job2000-4-fmghp QueueAddTime 59945552759.0 ExecutionStartTime 59945554035.0 PodDoneTime 59945554048.0
+Job job2000 Pod job2000-8-x7z9k QueueAddTime 59945552760.0 ExecutionStartTime 59945554401.0 PodDoneTime 59945554411.0
+Job job2000 Pod job2000-7-4pn8m QueueAddTime 59945552760.0 ExecutionStartTime 59945560751.0 PodDoneTime 59945560761.0
+Job job2000 Pod job2000-21-265p7 QueueAddTime 59945552761.0 ExecutionStartTime 59945560827.0 PodDoneTime 59945560838.0
+Job job2000 Pod job2000-5-qbdrp QueueAddTime 59945552759.0 ExecutionStartTime 59945566525.0 PodDoneTime 59945566537.0
+Job job2000 Pod job2000-0-spkpp QueueAddTime 59945552757.0 ExecutionStartTime 59945568079.0 PodDoneTime 59945568091.0
+Job job2000 Pod job2000-32-hdsr9 QueueAddTime 59945552762.0 ExecutionStartTime 59945572699.0 PodDoneTime 59945572709.0
+Job job2000 Pod job2000-2-qh54m QueueAddTime 59945552758.0 ExecutionStartTime 59945573435.0 PodDoneTime 59945573448.0 TAIL TASK
+Job  job6000 has JRT 12607.0 started at 1900-08-08 08:25:43 and ended at 1900-08-08 11:55:50
+Job job6000 Pod job6000-4-kvbd8 QueueAddTime 59945559944.0 ExecutionStartTime 59945561464.0 PodDoneTime 59945561524.0
+Job job6000 Pod job6000-3-9kkfx QueueAddTime 59945559944.0 ExecutionStartTime 59945562435.0 PodDoneTime 59945562490.0
+Job job6000 Pod job6000-1-fj5jp QueueAddTime 59945559944.0 ExecutionStartTime 59945564889.0 PodDoneTime 59945564956.0
+Job job6000 Pod job6000-0-gshrl QueueAddTime 59945559943.0 ExecutionStartTime 59945566427.0 PodDoneTime 59945566475.0
+Job job6000 Pod job6000-2-7xmgf QueueAddTime 59945559944.0 ExecutionStartTime 59945572494.0 PodDoneTime 59945572550.0 TAIL TASK
+Job  job7000 has JRT 16784.0 started at 1900-08-08 08:56:41 and ended at 1900-08-08 13:36:25
+Job job7000 Pod job7000-11-kkhdx QueueAddTime 59945561805.0 ExecutionStartTime 59945562832.0 PodDoneTime 59945562853.0
+Job job7000 Pod job7000-1-2vcj2 QueueAddTime 59945561802.0 ExecutionStartTime 59945562829.0 PodDoneTime 59945562860.0
+Job job7000 Pod job7000-5-4f4nh QueueAddTime 59945561804.0 ExecutionStartTime 59945562830.0 PodDoneTime 59945562868.0
+Job job7000 Pod job7000-3-kd542 QueueAddTime 59945561804.0 ExecutionStartTime 59945562830.0 PodDoneTime 59945562872.0
+Job job7000 Pod job7000-4-597l9 QueueAddTime 59945561804.0 ExecutionStartTime 59945564031.0 PodDoneTime 59945564047.0
+Job job7000 Pod job7000-9-bfgmq QueueAddTime 59945561805.0 ExecutionStartTime 59945565451.0 PodDoneTime 59945565482.0
+Job job7000 Pod job7000-7-6qcbg QueueAddTime 59945561805.0 ExecutionStartTime 59945565451.0 PodDoneTime 59945565489.0
+Job job7000 Pod job7000-2-sxvqn QueueAddTime 59945561802.0 ExecutionStartTime 59945567085.0 PodDoneTime 59945567118.0
+Job job7000 Pod job7000-10-tjtcx QueueAddTime 59945561806.0 ExecutionStartTime 59945569889.0 PodDoneTime 59945569920.0
+Job job7000 Pod job7000-8-9cm4x QueueAddTime 59945561805.0 ExecutionStartTime 59945570772.0 PodDoneTime 59945570796.0
+Job job7000 Pod job7000-0-6xstw QueueAddTime 59945561801.0 ExecutionStartTime 59945574022.0 PodDoneTime 59945574056.0
+Job job7000 Pod job7000-6-xp26v QueueAddTime 59945561804.0 ExecutionStartTime 59945578546.0 PodDoneTime 59945578585.0 TAIL TASK
+Job  job5000 has JRT 24419.0 started at 1900-08-08 07:55:30 and ended at 1900-08-08 14:42:29
+Job job5000 Pod job5000-25-mfwct QueueAddTime 59945558137.0 ExecutionStartTime 59945558582.0 PodDoneTime 59945558606.0
+Job job5000 Pod job5000-17-9d5ds QueueAddTime 59945558137.0 ExecutionStartTime 59945559083.0 PodDoneTime 59945559090.0
+Job job5000 Pod job5000-10-hfqk6 QueueAddTime 59945558135.0 ExecutionStartTime 59945559080.0 PodDoneTime 59945559102.0
+Job job5000 Pod job5000-7-bntnn QueueAddTime 59945558135.0 ExecutionStartTime 59945559081.0 PodDoneTime 59945559105.0
+Job job5000 Pod job5000-21-fd595 QueueAddTime 59945558137.0 ExecutionStartTime 59945559652.0 PodDoneTime 59945559659.0
+Job job5000 Pod job5000-9-pbjtx QueueAddTime 59945558135.0 ExecutionStartTime 59945560305.0 PodDoneTime 59945560317.0
+Job job5000 Pod job5000-16-glfqp QueueAddTime 59945558137.0 ExecutionStartTime 59945561065.0 PodDoneTime 59945561090.0
+Job job5000 Pod job5000-13-bc2ch QueueAddTime 59945558135.0 ExecutionStartTime 59945561957.0 PodDoneTime 59945561977.0
+Job job5000 Pod job5000-28-swrbn QueueAddTime 59945558137.0 ExecutionStartTime 59945561960.0 PodDoneTime 59945561978.0
+Job job5000 Pod job5000-0-ztrhs QueueAddTime 59945558130.0 ExecutionStartTime 59945562985.0 PodDoneTime 59945563002.0
+Job job5000 Pod job5000-6-crrwz QueueAddTime 59945558134.0 ExecutionStartTime 59945562994.0 PodDoneTime 59945563012.0
+Job job5000 Pod job5000-2-smfvl QueueAddTime 59945558132.0 ExecutionStartTime 59945562991.0 PodDoneTime 59945563016.0
+Job job5000 Pod job5000-8-446r2 QueueAddTime 59945558135.0 ExecutionStartTime 59945563000.0 PodDoneTime 59945563018.0
+Job job5000 Pod job5000-24-8hckc QueueAddTime 59945558137.0 ExecutionStartTime 59945563004.0 PodDoneTime 59945563019.0
+Job job5000 Pod job5000-15-cnwrx QueueAddTime 59945558137.0 ExecutionStartTime 59945563004.0 PodDoneTime 59945563022.0
+Job job5000 Pod job5000-27-g9dnx QueueAddTime 59945558137.0 ExecutionStartTime 59945563005.0 PodDoneTime 59945563027.0
+Job job5000 Pod job5000-1-lz4jw QueueAddTime 59945558132.0 ExecutionStartTime 59945564218.0 PodDoneTime 59945564234.0
+Job job5000 Pod job5000-5-cg9pb QueueAddTime 59945558134.0 ExecutionStartTime 59945565661.0 PodDoneTime 59945565682.0
+Job job5000 Pod job5000-4-hgln9 QueueAddTime 59945558134.0 ExecutionStartTime 59945565661.0 PodDoneTime 59945565688.0
+Job job5000 Pod job5000-11-tswfc QueueAddTime 59945558135.0 ExecutionStartTime 59945565668.0 PodDoneTime 59945565690.0
+Job job5000 Pod job5000-3-r4zlt QueueAddTime 59945558134.0 ExecutionStartTime 59945565661.0 PodDoneTime 59945565692.0
+Job job5000 Pod job5000-23-jdnnq QueueAddTime 59945558137.0 ExecutionStartTime 59945565674.0 PodDoneTime 59945565698.0
+Job job5000 Pod job5000-22-pkndv QueueAddTime 59945558137.0 ExecutionStartTime 59945565676.0 PodDoneTime 59945565704.0
+Job job5000 Pod job5000-18-76xr6 QueueAddTime 59945558137.0 ExecutionStartTime 59945567335.0 PodDoneTime 59945567360.0
+Job job5000 Pod job5000-26-nrftm QueueAddTime 59945558137.0 ExecutionStartTime 59945568980.0 PodDoneTime 59945569002.0
+Job job5000 Pod job5000-20-j99xf QueueAddTime 59945558137.0 ExecutionStartTime 59945571571.0 PodDoneTime 59945571592.0
+Job job5000 Pod job5000-14-2qh7c QueueAddTime 59945558135.0 ExecutionStartTime 59945578439.0 PodDoneTime 59945578452.0
+Job job5000 Pod job5000-12-hkpws QueueAddTime 59945558135.0 ExecutionStartTime 59945580913.0 PodDoneTime 59945580934.0
+Job job5000 Pod job5000-19-vm9vp QueueAddTime 59945558137.0 ExecutionStartTime 59945582534.0 PodDoneTime 59945582549.0 TAIL TASK
+Job  job8000 has JRT 14314.0 started at 1900-08-08 09:26:05 and ended at 1900-08-08 13:24:39
+Job job8000 Pod job8000-1-tpg2h QueueAddTime 59945563566.0 ExecutionStartTime 59945571903.0 PodDoneTime 59945571912.0
+Job job8000 Pod job8000-0-qq994 QueueAddTime 59945563565.0 ExecutionStartTime 59945577874.0 PodDoneTime 59945577879.0 TAIL TASK
+Job  job9000 has JRT 21860.0 started at 1900-08-08 09:51:57 and ended at 1900-08-08 15:56:17
+Job job9000 Pod job9000-12-rrrbj QueueAddTime 59945565122.0 ExecutionStartTime 59945566712.0 PodDoneTime 59945566737.0
+Job job9000 Pod job9000-16-8flbm QueueAddTime 59945565127.0 ExecutionStartTime 59945566718.0 PodDoneTime 59945566738.0
+Job job9000 Pod job9000-25-lmh8t QueueAddTime 59945565127.0 ExecutionStartTime 59945566717.0 PodDoneTime 59945566742.0
+Job job9000 Pod job9000-5-ttwtl QueueAddTime 59945565119.0 ExecutionStartTime 59945566708.0 PodDoneTime 59945566741.0
+Job job9000 Pod job9000-20-jr6tf QueueAddTime 59945565126.0 ExecutionStartTime 59945566717.0 PodDoneTime 59945566748.0
+Job job9000 Pod job9000-18-xt6ln QueueAddTime 59945565126.0 ExecutionStartTime 59945566717.0 PodDoneTime 59945566759.0
+Job job9000 Pod job9000-1-5rvp8 QueueAddTime 59945565118.0 ExecutionStartTime 59945568561.0 PodDoneTime 59945568592.0
+Job job9000 Pod job9000-15-tgjh5 QueueAddTime 59945565126.0 ExecutionStartTime 59945568575.0 PodDoneTime 59945568602.0
+Job job9000 Pod job9000-2-flk85 QueueAddTime 59945565118.0 ExecutionStartTime 59945569675.0 PodDoneTime 59945569686.0
+Job job9000 Pod job9000-24-9t7zs QueueAddTime 59945565126.0 ExecutionStartTime 59945569682.0 PodDoneTime 59945569708.0
+Job job9000 Pod job9000-10-d24h8 QueueAddTime 59945565122.0 ExecutionStartTime 59945570601.0 PodDoneTime 59945570621.0
+Job job9000 Pod job9000-4-84k6f QueueAddTime 59945565119.0 ExecutionStartTime 59945571362.0 PodDoneTime 59945571384.0
+Job job9000 Pod job9000-13-wjrfg QueueAddTime 59945565122.0 ExecutionStartTime 59945571364.0 PodDoneTime 59945571385.0
+Job job9000 Pod job9000-8-sd65q QueueAddTime 59945565122.0 ExecutionStartTime 59945571364.0 PodDoneTime 59945571393.0
+Job job9000 Pod job9000-7-mnp7v QueueAddTime 59945565122.0 ExecutionStartTime 59945571364.0 PodDoneTime 59945571399.0
+Job job9000 Pod job9000-26-mr5qh QueueAddTime 59945565126.0 ExecutionStartTime 59945572027.0 PodDoneTime 59945572043.0
+Job job9000 Pod job9000-11-nsrkv QueueAddTime 59945565122.0 ExecutionStartTime 59945572026.0 PodDoneTime 59945572051.0
+Job job9000 Pod job9000-14-wfplz QueueAddTime 59945565122.0 ExecutionStartTime 59945573948.0 PodDoneTime 59945573977.0
+Job job9000 Pod job9000-3-5gfmx QueueAddTime 59945565119.0 ExecutionStartTime 59945574923.0 PodDoneTime 59945574945.0
+Job job9000 Pod job9000-17-5ph6m QueueAddTime 59945565126.0 ExecutionStartTime 59945574924.0 PodDoneTime 59945574949.0
+Job job9000 Pod job9000-9-hl8rh QueueAddTime 59945565122.0 ExecutionStartTime 59945575695.0 PodDoneTime 59945575719.0
+Job job9000 Pod job9000-23-p2z9q QueueAddTime 59945565126.0 ExecutionStartTime 59945577037.0 PodDoneTime 59945577061.0
+Job job9000 Pod job9000-22-5498t QueueAddTime 59945565127.0 ExecutionStartTime 59945578033.0 PodDoneTime 59945578061.0
+Job job9000 Pod job9000-19-7fltv QueueAddTime 59945565127.0 ExecutionStartTime 59945578523.0 PodDoneTime 59945578550.0
+Job job9000 Pod job9000-0-84pgd QueueAddTime 59945565117.0 ExecutionStartTime 59945578636.0 PodDoneTime 59945578653.0
+Job job9000 Pod job9000-21-l2ktv QueueAddTime 59945565126.0 ExecutionStartTime 59945579599.0 PodDoneTime 59945579618.0
+Job job9000 Pod job9000-6-khmqp QueueAddTime 59945565119.0 ExecutionStartTime 59945586957.0 PodDoneTime 59945586977.0 TAIL TASK
+Job  job10000 has JRT 12279.0 started at 1900-08-08 10:19:05 and ended at 1900-08-08 13:43:44
+Job job10000 Pod job10000-5-vpzbm QueueAddTime 59945566749.0 ExecutionStartTime 59945568616.0 PodDoneTime 59945568683.0
+Job job10000 Pod job10000-3-5rwsb QueueAddTime 59945566749.0 ExecutionStartTime 59945568617.0 PodDoneTime 59945568693.0
+Job job10000 Pod job10000-1-2r8pl QueueAddTime 59945566747.0 ExecutionStartTime 59945575204.0 PodDoneTime 59945575250.0
+Job job10000 Pod job10000-2-fddpz QueueAddTime 59945566747.0 ExecutionStartTime 59945575203.0 PodDoneTime 59945575252.0
+Job job10000 Pod job10000-0-fhjk4 QueueAddTime 59945566745.0 ExecutionStartTime 59945576528.0 PodDoneTime 59945576576.0
+Job job10000 Pod job10000-4-rtc5t QueueAddTime 59945566749.0 ExecutionStartTime 59945578966.0 PodDoneTime 59945579024.0 TAIL TASK
+Pods discarded is 0
+Script took a total of 11.730315685272217 s

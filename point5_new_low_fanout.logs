@@ -1,0 +1,304 @@
+This file processes the number of jobs present in temp.tr. Ensure that is fine.
+Evaluating jobs dict_keys(['job101', 'job203', 'job310', 'job411', 'job504', 'job606', 'job700', 'job803', 'job900', 'job1017', 'job1133', 'job1208', 'job1305', 'job1403', 'job1508', 'job1601', 'job1701', 'job1808', 'job1906', 'job2003', 'job2101', 'job2205', 'job2308', 'job2407', 'job2507', 'job2607', 'job2720', 'job2813', 'job2910', 'job3000', 'job3101', 'job3207', 'job3320', 'job3416', 'job3502', 'job3606', 'job3706', 'job3812', 'job3912', 'job4000', 'job4117', 'job4200', 'job4331', 'job4413', 'job4501', 'job4609', 'job4700', 'job4805', 'job4911', 'job5007', 'job5103', 'job5204', 'job5301', 'job5408', 'job5502', 'job5600', 'job5701', 'job5802', 'job5905', 'job6007', 'job6113', 'job6210', 'job6300', 'job6415', 'job6511', 'job6600', 'job6713', 'job6800', 'job6909', 'job7011', 'job7116', 'job7206', 'job7314', 'job7409', 'job7500', 'job7604', 'job7700', 'job7803', 'job7910', 'job8000', 'job8102', 'job8204', 'job8307', 'job8404', 'job8507', 'job8600', 'job8726', 'job8824', 'job8902', 'job9010', 'job9108', 'job9210', 'job9347', 'job9403', 'job9503', 'job9600', 'job9700', 'job9815', 'job9902'])
+Job  job411 has JRT 21.0 started at 1900-08-08 05:43:23 and ended at 1900-08-08 05:43:44
+Job job411 Pod job411-0-4njr2 QueueAddTime 59945550203.0 ExecutionStartTime 59945550205.0 PodDoneTime 59945550224.0 TAIL TASK
+Job  job101 has JRT 105.0 started at 1900-08-08 05:35:06 and ended at 1900-08-08 05:36:51
+Job job101 Pod job101-0-j9tfv QueueAddTime 59945549706.0 ExecutionStartTime 59945549708.0 PodDoneTime 59945549811.0 TAIL TASK
+Job  job203 has JRT 38.0 started at 1900-08-08 05:37:33 and ended at 1900-08-08 05:38:11
+Job job203 Pod job203-0-vnfpf QueueAddTime 59945549853.0 ExecutionStartTime 59945549855.0 PodDoneTime 59945549891.0 TAIL TASK
+Job  job310 has JRT 54.0 started at 1900-08-08 05:41:09 and ended at 1900-08-08 05:42:03
+Job job310 Pod job310-1-8lkhz QueueAddTime 59945550071.0 ExecutionStartTime 59945550073.0 PodDoneTime 59945550104.0
+Job job310 Pod job310-2-lxjcd QueueAddTime 59945550071.0 ExecutionStartTime 59945550072.0 PodDoneTime 59945550123.0 TAIL TASK
+Job job310 Pod job310-0-nkqg2 QueueAddTime 59945550069.0 ExecutionStartTime 59945550071.0 PodDoneTime 59945550123.0
+Job  job504 has JRT 15.0 started at 1900-08-08 05:46:14 and ended at 1900-08-08 05:46:29
+Job job504 Pod job504-0-xg2zq QueueAddTime 59945550374.0 ExecutionStartTime 59945550376.0 PodDoneTime 59945550382.0
+Job job504 Pod job504-1-qt4lb QueueAddTime 59945550380.0 ExecutionStartTime 59945550382.0 PodDoneTime 59945550389.0 TAIL TASK
+Job  job606 has JRT 19.0 started at 1900-08-08 05:48:20 and ended at 1900-08-08 05:48:39
+Job job606 Pod job606-0-gw595 QueueAddTime 59945550500.0 ExecutionStartTime 59945550502.0 PodDoneTime 59945550515.0
+Job job606 Pod job606-1-8jkjx QueueAddTime 59945550501.0 ExecutionStartTime 59945550503.0 PodDoneTime 59945550519.0 TAIL TASK
+Job  job803 has JRT 30.0 started at 1900-08-08 05:52:54 and ended at 1900-08-08 05:53:24
+Job job803 Pod job803-1-n66pw QueueAddTime 59945550775.0 ExecutionStartTime 59945550777.0 PodDoneTime 59945550798.0
+Job job803 Pod job803-0-j6zqs QueueAddTime 59945550774.0 ExecutionStartTime 59945550776.0 PodDoneTime 59945550799.0
+Job job803 Pod job803-2-dqp2r QueueAddTime 59945550775.0 ExecutionStartTime 59945550777.0 PodDoneTime 59945550804.0 TAIL TASK
+Job  job700 has JRT 120.0 started at 1900-08-08 05:50:42 and ended at 1900-08-08 05:52:42
+Job job700 Pod job700-2-7khrr QueueAddTime 59945550643.0 ExecutionStartTime 59945550645.0 PodDoneTime 59945550751.0
+Job job700 Pod job700-0-vqpbg QueueAddTime 59945550642.0 ExecutionStartTime 59945550644.0 PodDoneTime 59945550753.0
+Job job700 Pod job700-1-lbcff QueueAddTime 59945550643.0 ExecutionStartTime 59945550645.0 PodDoneTime 59945550762.0 TAIL TASK
+Job  job1017 has JRT 519.0 started at 1900-08-08 05:58:15 and ended at 1900-08-08 06:06:54
+Job job1017 Pod job1017-0-nbxf2 QueueAddTime 59945551095.0 ExecutionStartTime 59945551097.0 PodDoneTime 59945551614.0 TAIL TASK
+Job  job900 has JRT 32.0 started at 1900-08-08 05:55:29 and ended at 1900-08-08 05:56:01
+Job job900 Pod job900-1-ngpl9 QueueAddTime 59945550929.0 ExecutionStartTime 59945550931.0 PodDoneTime 59945550945.0
+Job job900 Pod job900-0-j8fkt QueueAddTime 59945550929.0 ExecutionStartTime 59945550931.0 PodDoneTime 59945550958.0
+Job job900 Pod job900-2-6cv24 QueueAddTime 59945550929.0 ExecutionStartTime 59945550931.0 PodDoneTime 59945550961.0 TAIL TASK
+Job  job1133 has JRT 1622.0 started at 1900-08-08 06:00:55 and ended at 1900-08-08 06:27:57
+Job job1133 Pod job1133-0-jh89b QueueAddTime 59945551255.0 ExecutionStartTime 59945551258.0 PodDoneTime 59945551269.0
+Job job1133 Pod job1133-2-nb47l QueueAddTime 59945551256.0 ExecutionStartTime 59945551493.0 PodDoneTime 59945551515.0
+Job job1133 Pod job1133-1-gbms5 QueueAddTime 59945551256.0 ExecutionStartTime 59945552861.0 PodDoneTime 59945552877.0 TAIL TASK
+Job  job1208 has JRT 427.0 started at 1900-08-08 06:03:40 and ended at 1900-08-08 06:10:47
+Job job1208 Pod job1208-0-hnt2k QueueAddTime 59945551420.0 ExecutionStartTime 59945551484.0 PodDoneTime 59945551501.0
+Job job1208 Pod job1208-1-h2bm7 QueueAddTime 59945551421.0 ExecutionStartTime 59945551835.0 PodDoneTime 59945551847.0 TAIL TASK
+Job  job1305 has JRT 9.0 started at 1900-08-08 06:06:42 and ended at 1900-08-08 06:06:51
+Job job1305 Pod job1305-0-mlhw9 QueueAddTime 59945551602.0 ExecutionStartTime 59945551604.0 PodDoneTime 59945551610.0
+Job job1305 Pod job1305-1-jp5x8 QueueAddTime 59945551603.0 ExecutionStartTime 59945551605.0 PodDoneTime 59945551611.0 TAIL TASK
+Job  job1508 has JRT 83.0 started at 1900-08-08 06:13:04 and ended at 1900-08-08 06:14:27
+Job job1508 Pod job1508-0-p46s4 QueueAddTime 59945551984.0 ExecutionStartTime 59945551986.0 PodDoneTime 59945551992.0
+Job job1508 Pod job1508-2-4dcmw QueueAddTime 59945551985.0 ExecutionStartTime 59945551988.0 PodDoneTime 59945551997.0
+Job job1508 Pod job1508-1-9qxq5 QueueAddTime 59945551985.0 ExecutionStartTime 59945552062.0 PodDoneTime 59945552067.0 TAIL TASK
+Job  job1403 has JRT 168.0 started at 1900-08-08 06:09:21 and ended at 1900-08-08 06:12:09
+Job job1403 Pod job1403-2-9trkw QueueAddTime 59945551762.0 ExecutionStartTime 59945551764.0 PodDoneTime 59945551769.0
+Job job1403 Pod job1403-1-mbzgm QueueAddTime 59945551762.0 ExecutionStartTime 59945551915.0 PodDoneTime 59945551922.0
+Job job1403 Pod job1403-0-qdstc QueueAddTime 59945551761.0 ExecutionStartTime 59945551925.0 PodDoneTime 59945551929.0 TAIL TASK
+Job  job1601 has JRT 974.0 started at 1900-08-08 06:15:59 and ended at 1900-08-08 06:32:13
+Job job1601 Pod job1601-1-htmh2 QueueAddTime 59945552160.0 ExecutionStartTime 59945552162.0 PodDoneTime 59945552206.0
+Job job1601 Pod job1601-0-75qxp QueueAddTime 59945552159.0 ExecutionStartTime 59945553083.0 PodDoneTime 59945553133.0 TAIL TASK
+Job  job1701 has JRT 1249.0 started at 1900-08-08 06:18:00 and ended at 1900-08-08 06:38:49
+Job job1701 Pod job1701-1-kcqb7 QueueAddTime 59945552282.0 ExecutionStartTime 59945552533.0 PodDoneTime 59945552538.0
+Job job1701 Pod job1701-2-l7pfb QueueAddTime 59945552282.0 ExecutionStartTime 59945552928.0 PodDoneTime 59945552938.0
+Job job1701 Pod job1701-0-qzrnd QueueAddTime 59945552280.0 ExecutionStartTime 59945553522.0 PodDoneTime 59945553529.0 TAIL TASK
+Job  job1808 has JRT 9459.0 started at 1900-08-08 06:20:29 and ended at 1900-08-08 08:58:08
+Job job1808 Pod job1808-0-lnxhw QueueAddTime 59945552429.0 ExecutionStartTime 59945552431.0 PodDoneTime 59945552519.0
+Job job1808 Pod job1808-1-j9rv6 QueueAddTime 59945552429.0 ExecutionStartTime 59945552463.0 PodDoneTime 59945552546.0
+Job job1808 Pod job1808-2-dpkcn QueueAddTime 59945552429.0 ExecutionStartTime 59945561801.0 PodDoneTime 59945561888.0 TAIL TASK
+Job  job2003 has JRT 576.0 started at 1900-08-08 06:26:00 and ended at 1900-08-08 06:35:36
+Job job2003 Pod job2003-0-ttrrx QueueAddTime 59945552760.0 ExecutionStartTime 59945553291.0 PodDoneTime 59945553336.0 TAIL TASK
+Job  job1906 has JRT 222.0 started at 1900-08-08 06:24:00 and ended at 1900-08-08 06:27:42
+Job job1906 Pod job1906-1-5466z QueueAddTime 59945552640.0 ExecutionStartTime 59945552752.0 PodDoneTime 59945552764.0
+Job job1906 Pod job1906-0-t6c2v QueueAddTime 59945552640.0 ExecutionStartTime 59945552855.0 PodDoneTime 59945552862.0 TAIL TASK
+Job  job2101 has JRT 115.0 started at 1900-08-08 06:28:09 and ended at 1900-08-08 06:30:04
+Job job2101 Pod job2101-0-2kxqj QueueAddTime 59945552889.0 ExecutionStartTime 59945552994.0 PodDoneTime 59945553004.0 TAIL TASK
+Job  job2205 has JRT 376.0 started at 1900-08-08 06:31:09 and ended at 1900-08-08 06:37:25
+Job job2205 Pod job2205-0-hrft6 QueueAddTime 59945553069.0 ExecutionStartTime 59945553435.0 PodDoneTime 59945553445.0 TAIL TASK
+Job  job2308 has JRT 4922.0 started at 1900-08-08 06:34:39 and ended at 1900-08-08 07:56:41
+Job job2308 Pod job2308-0-5pnnc QueueAddTime 59945553279.0 ExecutionStartTime 59945553704.0 PodDoneTime 59945553709.0
+Job job2308 Pod job2308-2-6dscg QueueAddTime 59945553280.0 ExecutionStartTime 59945553864.0 PodDoneTime 59945553873.0
+Job job2308 Pod job2308-1-txhdg QueueAddTime 59945553280.0 ExecutionStartTime 59945558191.0 PodDoneTime 59945558201.0 TAIL TASK
+Job  job2407 has JRT 14457.0 started at 1900-08-08 06:36:52 and ended at 1900-08-08 10:37:49
+Job job2407 Pod job2407-0-4vnjh QueueAddTime 59945553412.0 ExecutionStartTime 59945553679.0 PodDoneTime 59945553698.0
+Job job2407 Pod job2407-1-7thrz QueueAddTime 59945553413.0 ExecutionStartTime 59945567847.0 PodDoneTime 59945567869.0 TAIL TASK
+Job  job2507 has JRT 6478.0 started at 1900-08-08 06:39:38 and ended at 1900-08-08 08:27:36
+Job job2507 Pod job2507-0-ks2bl QueueAddTime 59945553578.0 ExecutionStartTime 59945553633.0 PodDoneTime 59945553643.0
+Job job2507 Pod job2507-1-h9kpz QueueAddTime 59945553579.0 ExecutionStartTime 59945560040.0 PodDoneTime 59945560056.0 TAIL TASK
+Job  job2720 has JRT 1833.0 started at 1900-08-08 06:48:14 and ended at 1900-08-08 07:18:47
+Job job2720 Pod job2720-1-82wtz QueueAddTime 59945554095.0 ExecutionStartTime 59945554302.0 PodDoneTime 59945554310.0
+Job job2720 Pod job2720-0-dc678 QueueAddTime 59945554094.0 ExecutionStartTime 59945555919.0 PodDoneTime 59945555927.0 TAIL TASK
+Job  job2607 has JRT 703.0 started at 1900-08-08 06:43:07 and ended at 1900-08-08 06:54:50
+Job job2607 Pod job2607-0-vgx8g QueueAddTime 59945553787.0 ExecutionStartTime 59945553926.0 PodDoneTime 59945553931.0
+Job job2607 Pod job2607-2-kw5kr QueueAddTime 59945553787.0 ExecutionStartTime 59945554049.0 PodDoneTime 59945554052.0
+Job job2607 Pod job2607-1-g9bjb QueueAddTime 59945553787.0 ExecutionStartTime 59945554483.0 PodDoneTime 59945554490.0 TAIL TASK
+Job  job2813 has JRT 2501.0 started at 1900-08-08 06:50:26 and ended at 1900-08-08 07:32:07
+Job job2813 Pod job2813-1-2qxgj QueueAddTime 59945554227.0 ExecutionStartTime 59945554612.0 PodDoneTime 59945554619.0
+Job job2813 Pod job2813-0-p257j QueueAddTime 59945554226.0 ExecutionStartTime 59945556721.0 PodDoneTime 59945556727.0 TAIL TASK
+Job  job3000 has JRT 4165.0 started at 1900-08-08 06:56:20 and ended at 1900-08-08 08:05:45
+Job job3000 Pod job3000-0-c2x5w QueueAddTime 59945554580.0 ExecutionStartTime 59945558705.0 PodDoneTime 59945558724.0
+Job job3000 Pod job3000-1-g7wdb QueueAddTime 59945554581.0 ExecutionStartTime 59945558714.0 PodDoneTime 59945558745.0 TAIL TASK
+Job  job2910 has JRT 22069.0 started at 1900-08-08 06:53:44 and ended at 1900-08-08 13:01:33
+Job job2910 Pod job2910-0-5rmdj QueueAddTime 59945554424.0 ExecutionStartTime 59945576397.0 PodDoneTime 59945576493.0 TAIL TASK
+Job  job3101 has JRT 19289.0 started at 1900-08-08 06:59:40 and ended at 1900-08-08 12:21:09
+Job job3101 Pod job3101-2-zqjgg QueueAddTime 59945554781.0 ExecutionStartTime 59945557675.0 PodDoneTime 59945557743.0
+Job job3101 Pod job3101-0-pqvdq QueueAddTime 59945554780.0 ExecutionStartTime 59945558474.0 PodDoneTime 59945558543.0
+Job job3101 Pod job3101-1-jdtkn QueueAddTime 59945554781.0 ExecutionStartTime 59945574001.0 PodDoneTime 59945574069.0 TAIL TASK
+Job  job3207 has JRT 7963.0 started at 1900-08-08 07:02:44 and ended at 1900-08-08 09:15:27
+Job job3207 Pod job3207-1-w2pdn QueueAddTime 59945554979.0 ExecutionStartTime 59945555196.0 PodDoneTime 59945555262.0
+Job job3207 Pod job3207-0-fd65w QueueAddTime 59945554964.0 ExecutionStartTime 59945561723.0 PodDoneTime 59945561784.0
+Job job3207 Pod job3207-2-b8rfg QueueAddTime 59945554979.0 ExecutionStartTime 59945562882.0 PodDoneTime 59945562927.0 TAIL TASK
+Job  job3320 has JRT 8544.0 started at 1900-08-08 07:05:59 and ended at 1900-08-08 09:28:23
+Job job3320 Pod job3320-0-xf8wv QueueAddTime 59945555159.0 ExecutionStartTime 59945563695.0 PodDoneTime 59945563703.0 TAIL TASK
+Job  job3416 has JRT 10255.0 started at 1900-08-08 07:08:10 and ended at 1900-08-08 09:59:05
+Job job3416 Pod job3416-0-7btlk QueueAddTime 59945555290.0 ExecutionStartTime 59945557648.0 PodDoneTime 59945559396.0
+Job job3416 Pod job3416-1-csgxz QueueAddTime 59945555291.0 ExecutionStartTime 59945563873.0 PodDoneTime 59945565545.0 TAIL TASK
+Job  job3502 has JRT 4092.0 started at 1900-08-08 07:10:16 and ended at 1900-08-08 08:18:28
+Job job3502 Pod job3502-0-lwld6 QueueAddTime 59945555416.0 ExecutionStartTime 59945557009.0 PodDoneTime 59945557057.0
+Job job3502 Pod job3502-1-tscwd QueueAddTime 59945555419.0 ExecutionStartTime 59945558445.0 PodDoneTime 59945558496.0
+Job job3502 Pod job3502-2-gtxxg QueueAddTime 59945555419.0 ExecutionStartTime 59945559475.0 PodDoneTime 59945559508.0 TAIL TASK
+Job  job3606 has JRT 7297.0 started at 1900-08-08 07:13:00 and ended at 1900-08-08 09:14:37
+Job job3606 Pod job3606-0-tbtnd QueueAddTime 59945555580.0 ExecutionStartTime 59945558516.0 PodDoneTime 59945558536.0
+Job job3606 Pod job3606-1-nz98l QueueAddTime 59945555581.0 ExecutionStartTime 59945562855.0 PodDoneTime 59945562877.0 TAIL TASK
+Job  job3706 has JRT 14976.0 started at 1900-08-08 07:15:06 and ended at 1900-08-08 11:24:42
+Job job3706 Pod job3706-1-ggx9g QueueAddTime 59945555707.0 ExecutionStartTime 59945560088.0 PodDoneTime 59945560100.0
+Job job3706 Pod job3706-0-dc52w QueueAddTime 59945555706.0 ExecutionStartTime 59945570665.0 PodDoneTime 59945570682.0 TAIL TASK
+Job  job3812 has JRT 4117.0 started at 1900-08-08 07:18:50 and ended at 1900-08-08 08:27:27
+Job job3812 Pod job3812-0-cb6c2 QueueAddTime 59945555930.0 ExecutionStartTime 59945557102.0 PodDoneTime 59945557467.0
+Job job3812 Pod job3812-1-cmx6p QueueAddTime 59945555931.0 ExecutionStartTime 59945557761.0 PodDoneTime 59945558179.0
+Job job3812 Pod job3812-2-26c9q QueueAddTime 59945555931.0 ExecutionStartTime 59945559661.0 PodDoneTime 59945560047.0 TAIL TASK
+Job  job4000 has JRT 9264.0 started at 1900-08-08 07:25:08 and ended at 1900-08-08 09:59:32
+Job job4000 Pod job4000-0-kdw8c QueueAddTime 59945556308.0 ExecutionStartTime 59945556795.0 PodDoneTime 59945556816.0
+Job job4000 Pod job4000-2-z2jgq QueueAddTime 59945556309.0 ExecutionStartTime 59945559035.0 PodDoneTime 59945559052.0
+Job job4000 Pod job4000-1-p7r8w QueueAddTime 59945556309.0 ExecutionStartTime 59945565545.0 PodDoneTime 59945565572.0 TAIL TASK
+Job  job3912 has JRT 23414.0 started at 1900-08-08 07:22:00 and ended at 1900-08-08 13:52:14
+Job job3912 Pod job3912-0-mghr5 QueueAddTime 59945556120.0 ExecutionStartTime 59945561970.0 PodDoneTime 59945562046.0
+Job job3912 Pod job3912-1-dpkb6 QueueAddTime 59945556121.0 ExecutionStartTime 59945579458.0 PodDoneTime 59945579534.0 TAIL TASK
+Job  job4117 has JRT 3065.0 started at 1900-08-08 07:28:42 and ended at 1900-08-08 08:19:47
+Job job4117 Pod job4117-0-srv52 QueueAddTime 59945556522.0 ExecutionStartTime 59945557361.0 PodDoneTime 59945557372.0
+Job job4117 Pod job4117-1-jj8sr QueueAddTime 59945556528.0 ExecutionStartTime 59945559568.0 PodDoneTime 59945559587.0 TAIL TASK
+Job  job4200 has JRT 889.0 started at 1900-08-08 07:30:49 and ended at 1900-08-08 07:45:38
+Job job4200 Pod job4200-0-kw68p QueueAddTime 59945556649.0 ExecutionStartTime 59945557531.0 PodDoneTime 59945557534.0
+Job job4200 Pod job4200-1-gkqgh QueueAddTime 59945556651.0 ExecutionStartTime 59945557532.0 PodDoneTime 59945557538.0 TAIL TASK
+Job  job4331 has JRT 3619.0 started at 1900-08-08 07:34:43 and ended at 1900-08-08 08:35:02
+Job job4331 Pod job4331-0-bj57c QueueAddTime 59945556883.0 ExecutionStartTime 59945560483.0 PodDoneTime 59945560502.0 TAIL TASK
+Job  job4413 has JRT 1032.0 started at 1900-08-08 07:37:12 and ended at 1900-08-08 07:54:24
+Job job4413 Pod job4413-0-sjmrp QueueAddTime 59945557032.0 ExecutionStartTime 59945558049.0 PodDoneTime 59945558064.0 TAIL TASK
+Job  job4501 has JRT 8923.0 started at 1900-08-08 07:39:26 and ended at 1900-08-08 10:08:09
+Job job4501 Pod job4501-2-q4pbv QueueAddTime 59945557168.0 ExecutionStartTime 59945562198.0 PodDoneTime 59945562222.0
+Job job4501 Pod job4501-0-wjl68 QueueAddTime 59945557166.0 ExecutionStartTime 59945564566.0 PodDoneTime 59945564590.0
+Job job4501 Pod job4501-1-zs54w QueueAddTime 59945557168.0 ExecutionStartTime 59945566072.0 PodDoneTime 59945566089.0 TAIL TASK
+Job  job4609 has JRT 1203.0 started at 1900-08-08 07:42:39 and ended at 1900-08-08 08:02:42
+Job job4609 Pod job4609-0-d5cl6 QueueAddTime 59945557359.0 ExecutionStartTime 59945558508.0 PodDoneTime 59945558562.0 TAIL TASK
+Job  job4700 has JRT 22425.0 started at 1900-08-08 07:46:11 and ended at 1900-08-08 13:59:56
+Job job4700 Pod job4700-0-lhwqh QueueAddTime 59945557571.0 ExecutionStartTime 59945562441.0 PodDoneTime 59945562473.0
+Job job4700 Pod job4700-2-pbv4v QueueAddTime 59945557571.0 ExecutionStartTime 59945563567.0 PodDoneTime 59945563592.0
+Job job4700 Pod job4700-1-8h4zz QueueAddTime 59945557571.0 ExecutionStartTime 59945579979.0 PodDoneTime 59945579996.0 TAIL TASK
+Job  job4805 has JRT 2565.0 started at 1900-08-08 07:48:36 and ended at 1900-08-08 08:31:21
+Job job4805 Pod job4805-0-znbk8 QueueAddTime 59945557716.0 ExecutionStartTime 59945560235.0 PodDoneTime 59945560281.0 TAIL TASK
+Job  job4911 has JRT 6923.0 started at 1900-08-08 07:51:56 and ended at 1900-08-08 09:47:19
+Job job4911 Pod job4911-0-6v6xn QueueAddTime 59945557916.0 ExecutionStartTime 59945564832.0 PodDoneTime 59945564839.0 TAIL TASK
+Job  job5007 has JRT 2211.0 started at 1900-08-08 07:55:42 and ended at 1900-08-08 08:32:33
+Job job5007 Pod job5007-1-nk8ls QueueAddTime 59945558143.0 ExecutionStartTime 59945559091.0 PodDoneTime 59945559109.0
+Job job5007 Pod job5007-2-5rs8l QueueAddTime 59945558143.0 ExecutionStartTime 59945559662.0 PodDoneTime 59945559695.0
+Job job5007 Pod job5007-0-glxtw QueueAddTime 59945558142.0 ExecutionStartTime 59945560317.0 PodDoneTime 59945560353.0 TAIL TASK
+Job  job5103 has JRT 15566.0 started at 1900-08-08 07:57:35 and ended at 1900-08-08 12:17:01
+Job job5103 Pod job5103-0-fpvdh QueueAddTime 59945558255.0 ExecutionStartTime 59945559825.0 PodDoneTime 59945559846.0
+Job job5103 Pod job5103-1-nb4k9 QueueAddTime 59945558256.0 ExecutionStartTime 59945566145.0 PodDoneTime 59945566176.0
+Job job5103 Pod job5103-2-dmfxk QueueAddTime 59945558256.0 ExecutionStartTime 59945573788.0 PodDoneTime 59945573821.0 TAIL TASK
+Job  job5204 has JRT 19638.0 started at 1900-08-08 08:00:36 and ended at 1900-08-08 13:27:54
+Job job5204 Pod job5204-0-4s4s2 QueueAddTime 59945558436.0 ExecutionStartTime 59945563855.0 PodDoneTime 59945566482.0
+Job job5204 Pod job5204-1-rtrmq QueueAddTime 59945558437.0 ExecutionStartTime 59945575485.0 PodDoneTime 59945578074.0 TAIL TASK
+Job  job5301 has JRT 8726.0 started at 1900-08-08 08:02:38 and ended at 1900-08-08 10:28:04
+Job job5301 Pod job5301-0-8lgwc QueueAddTime 59945558558.0 ExecutionStartTime 59945567259.0 PodDoneTime 59945567284.0 TAIL TASK
+Job  job5408 has JRT 11632.0 started at 1900-08-08 08:05:59 and ended at 1900-08-08 11:19:51
+Job job5408 Pod job5408-0-t6kkq QueueAddTime 59945558759.0 ExecutionStartTime 59945563449.0 PodDoneTime 59945563458.0
+Job job5408 Pod job5408-1-xfzrv QueueAddTime 59945558760.0 ExecutionStartTime 59945570380.0 PodDoneTime 59945570391.0 TAIL TASK
+Job  job5502 has JRT 6372.0 started at 1900-08-08 08:08:50 and ended at 1900-08-08 09:55:02
+Job job5502 Pod job5502-2-pg7q4 QueueAddTime 59945558931.0 ExecutionStartTime 59945560841.0 PodDoneTime 59945560856.0
+Job job5502 Pod job5502-0-26wns QueueAddTime 59945558930.0 ExecutionStartTime 59945562711.0 PodDoneTime 59945562735.0
+Job job5502 Pod job5502-1-sg4l5 QueueAddTime 59945558931.0 ExecutionStartTime 59945565291.0 PodDoneTime 59945565302.0 TAIL TASK
+Job  job5600 has JRT 2991.0 started at 1900-08-08 08:12:32 and ended at 1900-08-08 09:02:23
+Job job5600 Pod job5600-0-5lhk7 QueueAddTime 59945559152.0 ExecutionStartTime 59945562099.0 PodDoneTime 59945562143.0 TAIL TASK
+Job  job5701 has JRT 10294.0 started at 1900-08-08 08:17:03 and ended at 1900-08-08 11:08:37
+Job job5701 Pod job5701-2-d9f2p QueueAddTime 59945559430.0 ExecutionStartTime 59945563778.0 PodDoneTime 59945563821.0
+Job job5701 Pod job5701-1-c47f6 QueueAddTime 59945559430.0 ExecutionStartTime 59945568611.0 PodDoneTime 59945568649.0
+Job job5701 Pod job5701-0-jwsdf QueueAddTime 59945559423.0 ExecutionStartTime 59945569685.0 PodDoneTime 59945569717.0 TAIL TASK
+Job  job5802 has JRT 22911.0 started at 1900-08-08 08:20:27 and ended at 1900-08-08 14:42:18
+Job job5802 Pod job5802-0-c64c9 QueueAddTime 59945559627.0 ExecutionStartTime 59945561035.0 PodDoneTime 59945561061.0
+Job job5802 Pod job5802-2-8zn88 QueueAddTime 59945559627.0 ExecutionStartTime 59945564185.0 PodDoneTime 59945564206.0
+Job job5802 Pod job5802-1-xgtt8 QueueAddTime 59945559628.0 ExecutionStartTime 59945582516.0 PodDoneTime 59945582538.0 TAIL TASK
+Job  job6007 has JRT 6502.0 started at 1900-08-08 08:25:50 and ended at 1900-08-08 10:14:12
+Job job6007 Pod job6007-0-p8zrx QueueAddTime 59945559950.0 ExecutionStartTime 59945560651.0 PodDoneTime 59945560677.0
+Job job6007 Pod job6007-2-ctf2j QueueAddTime 59945559951.0 ExecutionStartTime 59945563569.0 PodDoneTime 59945563598.0
+Job job6007 Pod job6007-1-xr44t QueueAddTime 59945559951.0 ExecutionStartTime 59945566444.0 PodDoneTime 59945566452.0 TAIL TASK
+Job  job5905 has JRT 9436.0 started at 1900-08-08 08:22:33 and ended at 1900-08-08 10:59:49
+Job job5905 Pod job5905-0-wjh79 QueueAddTime 59945559753.0 ExecutionStartTime 59945562129.0 PodDoneTime 59945562151.0
+Job job5905 Pod job5905-2-hfkjc QueueAddTime 59945559754.0 ExecutionStartTime 59945563205.0 PodDoneTime 59945563211.0
+Job job5905 Pod job5905-1-h5bd8 QueueAddTime 59945559754.0 ExecutionStartTime 59945569169.0 PodDoneTime 59945569189.0 TAIL TASK
+Job  job6113 has JRT 5319.0 started at 1900-08-08 08:28:52 and ended at 1900-08-08 09:57:31
+Job job6113 Pod job6113-1-tv4lv QueueAddTime 59945560136.0 ExecutionStartTime 59945562749.0 PodDoneTime 59945562868.0
+Job job6113 Pod job6113-0-dv9wn QueueAddTime 59945560132.0 ExecutionStartTime 59945565331.0 PodDoneTime 59945565451.0 TAIL TASK
+Job  job6210 has JRT 1706.0 started at 1900-08-08 08:31:47 and ended at 1900-08-08 09:00:13
+Job job6210 Pod job6210-1-248kt QueueAddTime 59945560309.0 ExecutionStartTime 59945561069.0 PodDoneTime 59945561113.0
+Job job6210 Pod job6210-2-5hwb5 QueueAddTime 59945560309.0 ExecutionStartTime 59945561965.0 PodDoneTime 59945562005.0
+Job job6210 Pod job6210-0-pf7nh QueueAddTime 59945560307.0 ExecutionStartTime 59945561963.0 PodDoneTime 59945562013.0 TAIL TASK
+Job  job6300 has JRT 2849.0 started at 1900-08-08 08:35:05 and ended at 1900-08-08 09:22:34
+Job job6300 Pod job6300-2-x88mj QueueAddTime 59945560506.0 ExecutionStartTime 59945561305.0 PodDoneTime 59945561314.0
+Job job6300 Pod job6300-1-jvtfh QueueAddTime 59945560506.0 ExecutionStartTime 59945562245.0 PodDoneTime 59945562256.0
+Job job6300 Pod job6300-0-ssb8n QueueAddTime 59945560505.0 ExecutionStartTime 59945563338.0 PodDoneTime 59945563354.0 TAIL TASK
+Job  job6415 has JRT 13875.0 started at 1900-08-08 08:39:29 and ended at 1900-08-08 12:30:44
+Job job6415 Pod job6415-1-svzdn QueueAddTime 59945560770.0 ExecutionStartTime 59945563774.0 PodDoneTime 59945563805.0
+Job job6415 Pod job6415-0-wtjjb QueueAddTime 59945560769.0 ExecutionStartTime 59945574629.0 PodDoneTime 59945574644.0 TAIL TASK
+Job  job6511 has JRT 6219.0 started at 1900-08-08 08:42:37 and ended at 1900-08-08 10:26:16
+Job job6511 Pod job6511-0-5fphk QueueAddTime 59945560957.0 ExecutionStartTime 59945567135.0 PodDoneTime 59945567176.0 TAIL TASK
+Job  job6600 has JRT 7971.0 started at 1900-08-08 08:45:24 and ended at 1900-08-08 10:58:15
+Job job6600 Pod job6600-0-jbvxg QueueAddTime 59945561124.0 ExecutionStartTime 59945569066.0 PodDoneTime 59945569095.0 TAIL TASK
+Job  job6800 has JRT 2174.0 started at 1900-08-08 08:50:57 and ended at 1900-08-08 09:27:11
+Job job6800 Pod job6800-0-mj6qx QueueAddTime 59945561457.0 ExecutionStartTime 59945563552.0 PodDoneTime 59945563631.0 TAIL TASK
+Job  job6713 has JRT 11625.0 started at 1900-08-08 08:48:29 and ended at 1900-08-08 12:02:14
+Job job6713 Pod job6713-0-5qx9w QueueAddTime 59945561309.0 ExecutionStartTime 59945563349.0 PodDoneTime 59945563373.0
+Job job6713 Pod job6713-1-jtplq QueueAddTime 59945561309.0 ExecutionStartTime 59945572915.0 PodDoneTime 59945572934.0 TAIL TASK
+Job  job6909 has JRT 11974.0 started at 1900-08-08 08:52:58 and ended at 1900-08-08 12:12:32
+Job job6909 Pod job6909-0-c8gzq QueueAddTime 59945561578.0 ExecutionStartTime 59945573534.0 PodDoneTime 59945573552.0 TAIL TASK
+Job  job7011 has JRT 8971.0 started at 1900-08-08 08:56:51 and ended at 1900-08-08 11:26:22
+Job job7011 Pod job7011-0-pw5ch QueueAddTime 59945561811.0 ExecutionStartTime 59945569892.0 PodDoneTime 59945569899.0
+Job job7011 Pod job7011-1-22v4f QueueAddTime 59945561812.0 ExecutionStartTime 59945570775.0 PodDoneTime 59945570782.0 TAIL TASK
+Job  job7116 has JRT 18588.0 started at 1900-08-08 09:00:09 and ended at 1900-08-08 14:09:57
+Job job7116 Pod job7116-0-9l9h2 QueueAddTime 59945562009.0 ExecutionStartTime 59945563066.0 PodDoneTime 59945563097.0
+Job job7116 Pod job7116-2-hjskd QueueAddTime 59945562010.0 ExecutionStartTime 59945567440.0 PodDoneTime 59945567479.0
+Job job7116 Pod job7116-1-lc5sl QueueAddTime 59945562010.0 ExecutionStartTime 59945580565.0 PodDoneTime 59945580597.0 TAIL TASK
+Job  job7206 has JRT 17726.0 started at 1900-08-08 09:02:36 and ended at 1900-08-08 13:58:02
+Job job7206 Pod job7206-0-ng2th QueueAddTime 59945562156.0 ExecutionStartTime 59945563237.0 PodDoneTime 59945563241.0
+Job job7206 Pod job7206-1-8hbzn QueueAddTime 59945562157.0 ExecutionStartTime 59945566016.0 PodDoneTime 59945566025.0
+Job job7206 Pod job7206-2-bqr8r QueueAddTime 59945562157.0 ExecutionStartTime 59945579878.0 PodDoneTime 59945579882.0 TAIL TASK
+Job  job7314 has JRT 1141.0 started at 1900-08-08 09:05:42 and ended at 1900-08-08 09:24:43
+Job job7314 Pod job7314-0-knr5v QueueAddTime 59945562342.0 ExecutionStartTime 59945563454.0 PodDoneTime 59945563483.0 TAIL TASK
+Job  job7409 has JRT 16163.0 started at 1900-08-08 09:07:53 and ended at 1900-08-08 13:37:16
+Job job7409 Pod job7409-1-kfrns QueueAddTime 59945562474.0 ExecutionStartTime 59945571261.0 PodDoneTime 59945571267.0
+Job job7409 Pod job7409-0-fgjt6 QueueAddTime 59945562473.0 ExecutionStartTime 59945578620.0 PodDoneTime 59945578636.0 TAIL TASK
+Job  job7500 has JRT 4139.0 started at 1900-08-08 09:10:17 and ended at 1900-08-08 10:19:16
+Job job7500 Pod job7500-0-8zxpg QueueAddTime 59945562617.0 ExecutionStartTime 59945566745.0 PodDoneTime 59945566756.0 TAIL TASK
+Job job7500 Pod job7500-1-v49gx QueueAddTime 59945562619.0 ExecutionStartTime 59945566748.0 PodDoneTime 59945566756.0
+Job  job7604 has JRT 11189.0 started at 1900-08-08 09:14:33 and ended at 1900-08-08 12:21:02
+Job job7604 Pod job7604-1-v6smt QueueAddTime 59945562875.0 ExecutionStartTime 59945564084.0 PodDoneTime 59945564107.0
+Job job7604 Pod job7604-0-88lxw QueueAddTime 59945562873.0 ExecutionStartTime 59945574036.0 PodDoneTime 59945574062.0 TAIL TASK
+Job  job7700 has JRT 8582.0 started at 1900-08-08 09:17:22 and ended at 1900-08-08 11:40:24
+Job job7700 Pod job7700-0-846nh QueueAddTime 59945563042.0 ExecutionStartTime 59945570045.0 PodDoneTime 59945570070.0
+Job job7700 Pod job7700-1-swmpz QueueAddTime 59945563044.0 ExecutionStartTime 59945571590.0 PodDoneTime 59945571624.0 TAIL TASK
+Job  job7803 has JRT 15464.0 started at 1900-08-08 09:20:38 and ended at 1900-08-08 13:38:22
+Job job7803 Pod job7803-0-m68zl QueueAddTime 59945563238.0 ExecutionStartTime 59945564525.0 PodDoneTime 59945564532.0
+Job job7803 Pod job7803-1-zf2g5 QueueAddTime 59945563242.0 ExecutionStartTime 59945578696.0 PodDoneTime 59945578702.0 TAIL TASK
+Job  job7910 has JRT 2873.0 started at 1900-08-08 09:23:36 and ended at 1900-08-08 10:11:29
+Job job7910 Pod job7910-1-8df8d QueueAddTime 59945563417.0 ExecutionStartTime 59945564731.0 PodDoneTime 59945564771.0
+Job job7910 Pod job7910-0-x95ct QueueAddTime 59945563416.0 ExecutionStartTime 59945566253.0 PodDoneTime 59945566289.0 TAIL TASK
+Job  job8000 has JRT 14314.0 started at 1900-08-08 09:26:05 and ended at 1900-08-08 13:24:39
+Job job8000 Pod job8000-1-tpg2h QueueAddTime 59945563566.0 ExecutionStartTime 59945571903.0 PodDoneTime 59945571912.0
+Job job8000 Pod job8000-0-qq994 QueueAddTime 59945563565.0 ExecutionStartTime 59945577874.0 PodDoneTime 59945577879.0 TAIL TASK
+Job  job8102 has JRT 8317.0 started at 1900-08-08 09:28:15 and ended at 1900-08-08 11:46:52
+Job job8102 Pod job8102-2-txwvd QueueAddTime 59945563696.0 ExecutionStartTime 59945568479.0 PodDoneTime 59945568509.0
+Job job8102 Pod job8102-1-cx4d8 QueueAddTime 59945563696.0 ExecutionStartTime 59945570561.0 PodDoneTime 59945570579.0
+Job job8102 Pod job8102-0-jl4sl QueueAddTime 59945563695.0 ExecutionStartTime 59945571994.0 PodDoneTime 59945572012.0 TAIL TASK
+Job  job8204 has JRT 12552.0 started at 1900-08-08 09:30:36 and ended at 1900-08-08 12:59:48
+Job job8204 Pod job8204-1-7bcll QueueAddTime 59945563836.0 ExecutionStartTime 59945571415.0 PodDoneTime 59945571458.0
+Job job8204 Pod job8204-0-vpnbt QueueAddTime 59945563836.0 ExecutionStartTime 59945576353.0 PodDoneTime 59945576388.0 TAIL TASK
+Job  job8307 has JRT 19730.0 started at 1900-08-08 09:33:08 and ended at 1900-08-08 15:01:58
+Job job8307 Pod job8307-0-97585 QueueAddTime 59945563988.0 ExecutionStartTime 59945583702.0 PodDoneTime 59945583718.0 TAIL TASK
+Job  job8404 has JRT 3098.0 started at 1900-08-08 09:35:14 and ended at 1900-08-08 10:26:52
+Job job8404 Pod job8404-0-jxl5l QueueAddTime 59945564114.0 ExecutionStartTime 59945567191.0 PodDoneTime 59945567212.0 TAIL TASK
+Job  job8507 has JRT 6650.0 started at 1900-08-08 09:38:22 and ended at 1900-08-08 11:29:12
+Job job8507 Pod job8507-0-slw4b QueueAddTime 59945564302.0 ExecutionStartTime 59945570060.0 PodDoneTime 59945570952.0 TAIL TASK
+Job  job8600 has JRT 8877.0 started at 1900-08-08 09:40:27 and ended at 1900-08-08 12:08:24
+Job job8600 Pod job8600-0-p6jlj QueueAddTime 59945564427.0 ExecutionStartTime 59945573294.0 PodDoneTime 59945573304.0 TAIL TASK
+Job  job8726 has JRT 19537.0 started at 1900-08-08 09:44:43 and ended at 1900-08-08 15:10:20
+Job job8726 Pod job8726-0-8v5b7 QueueAddTime 59945564683.0 ExecutionStartTime 59945584213.0 PodDoneTime 59945584220.0 TAIL TASK
+Job  job8824 has JRT 7664.0 started at 1900-08-08 09:47:38 and ended at 1900-08-08 11:55:22
+Job job8824 Pod job8824-1-k59tj QueueAddTime 59945564859.0 ExecutionStartTime 59945569448.0 PodDoneTime 59945569484.0
+Job job8824 Pod job8824-0-4rswz QueueAddTime 59945564858.0 ExecutionStartTime 59945572481.0 PodDoneTime 59945572522.0 TAIL TASK
+Job  job8902 has JRT 5539.0 started at 1900-08-08 09:49:50 and ended at 1900-08-08 11:22:09
+Job job8902 Pod job8902-0-j8w46 QueueAddTime 59945564990.0 ExecutionStartTime 59945570517.0 PodDoneTime 59945570529.0 TAIL TASK
+Job  job9010 has JRT 13535.0 started at 1900-08-08 09:52:30 and ended at 1900-08-08 13:38:05
+Job job9010 Pod job9010-1-4ppjt QueueAddTime 59945565151.0 ExecutionStartTime 59945569713.0 PodDoneTime 59945569767.0
+Job job9010 Pod job9010-2-dckxz QueueAddTime 59945565151.0 ExecutionStartTime 59945575940.0 PodDoneTime 59945575985.0
+Job job9010 Pod job9010-0-tdzl8 QueueAddTime 59945565150.0 ExecutionStartTime 59945578638.0 PodDoneTime 59945578685.0 TAIL TASK
+Job  job9108 has JRT 5427.0 started at 1900-08-08 09:54:36 and ended at 1900-08-08 11:25:03
+Job job9108 Pod job9108-2-7bjh9 QueueAddTime 59945565277.0 ExecutionStartTime 59945566895.0 PodDoneTime 59945566903.0
+Job job9108 Pod job9108-1-p2j9v QueueAddTime 59945565277.0 ExecutionStartTime 59945568705.0 PodDoneTime 59945568713.0
+Job job9108 Pod job9108-0-c8llg QueueAddTime 59945565276.0 ExecutionStartTime 59945570690.0 PodDoneTime 59945570703.0 TAIL TASK
+Job  job9210 has JRT 5319.0 started at 1900-08-08 09:57:59 and ended at 1900-08-08 11:26:38
+Job job9210 Pod job9210-0-b2z8q QueueAddTime 59945565479.0 ExecutionStartTime 59945570785.0 PodDoneTime 59945570798.0 TAIL TASK
+Job  job9347 has JRT 10601.0 started at 1900-08-08 10:00:33 and ended at 1900-08-08 12:57:14
+Job job9347 Pod job9347-0-lnk9t QueueAddTime 59945565633.0 ExecutionStartTime 59945567292.0 PodDoneTime 59945567322.0
+Job job9347 Pod job9347-1-dcbpd QueueAddTime 59945565634.0 ExecutionStartTime 59945568951.0 PodDoneTime 59945568975.0
+Job job9347 Pod job9347-2-z8tdz QueueAddTime 59945565634.0 ExecutionStartTime 59945576204.0 PodDoneTime 59945576234.0 TAIL TASK
+Job  job9403 has JRT 6550.0 started at 1900-08-08 10:02:02 and ended at 1900-08-08 11:51:12
+Job job9403 Pod job9403-1-t6j8j QueueAddTime 59945565722.0 ExecutionStartTime 59945570041.0 PodDoneTime 59945570073.0
+Job job9403 Pod job9403-0-76s2r QueueAddTime 59945565722.0 ExecutionStartTime 59945572227.0 PodDoneTime 59945572272.0 TAIL TASK
+Job  job9503 has JRT 11698.0 started at 1900-08-08 10:04:52 and ended at 1900-08-08 13:19:50
+Job job9503 Pod job9503-0-2wctv QueueAddTime 59945565892.0 ExecutionStartTime 59945576230.0 PodDoneTime 59945576259.0
+Job job9503 Pod job9503-1-k9bhl QueueAddTime 59945565893.0 ExecutionStartTime 59945577553.0 PodDoneTime 59945577590.0 TAIL TASK
+Job  job9600 has JRT 11229.0 started at 1900-08-08 10:07:35 and ended at 1900-08-08 13:14:44
+Job job9600 Pod job9600-2-vr5js QueueAddTime 59945566056.0 ExecutionStartTime 59945569238.0 PodDoneTime 59945569246.0
+Job job9600 Pod job9600-0-bdwmq QueueAddTime 59945566055.0 ExecutionStartTime 59945576444.0 PodDoneTime 59945576449.0
+Job job9600 Pod job9600-1-l4xjv QueueAddTime 59945566056.0 ExecutionStartTime 59945577276.0 PodDoneTime 59945577284.0 TAIL TASK
+Job  job9700 has JRT 4926.0 started at 1900-08-08 10:10:11 and ended at 1900-08-08 11:32:17
+Job job9700 Pod job9700-0-qrdkg QueueAddTime 59945566211.0 ExecutionStartTime 59945571113.0 PodDoneTime 59945571137.0 TAIL TASK
+Job  job9815 has JRT 9877.0 started at 1900-08-08 10:13:59 and ended at 1900-08-08 12:58:36
+Job job9815 Pod job9815-0-6jwkn QueueAddTime 59945566439.0 ExecutionStartTime 59945576305.0 PodDoneTime 59945576316.0 TAIL TASK
+Job  job9902 has JRT 10118.0 started at 1900-08-08 10:16:28 and ended at 1900-08-08 13:05:06
+Job job9902 Pod job9902-0-4g9d6 QueueAddTime 59945566588.0 ExecutionStartTime 59945576686.0 PodDoneTime 59945576706.0 TAIL TASK
+Pods discarded is 0
+Script took a total of 85.84700846672058 s

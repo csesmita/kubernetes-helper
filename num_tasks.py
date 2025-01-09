@@ -34,6 +34,9 @@ for i in range(num_workloads):
     dp = 1. * np.arange(len(d)) / (len(d) - 1)
     #Show CDF
     plt.plot(d, dp, label=sys.argv[1+i], color=colors[i])
+    print("50th percentile: ",  np.percentile(num_tasks, 50))
+    print("90th percentile: ",  np.percentile(num_tasks, 90))
+    print("99th percentile: ",  np.percentile(num_tasks, 99))
     '''
     num_tasks.sort()
     plt.plot(num_tasks, label=sys.argv[1+i], color=colors[i])
@@ -41,7 +44,6 @@ for i in range(num_workloads):
 
     
 plt.xlabel('Number of Tasks')
-plt.title('CDF of Number of Tasks across Workloads')
 plt.ylabel('CDF')
 plt.xscale('log')
 plt.minorticks_off()
@@ -49,6 +51,7 @@ plt.legend()
 fig.tight_layout()
 fig.savefig('num_tasks.pdf', dpi=fig.dpi, bbox_inches='tight')
 
+print("Total tasks",sum(num_tasks))
 
 '''
 #num_tasks.sort()
@@ -60,7 +63,4 @@ plt.title('Num Tasks of Jobs', fontsize = 20)
 plt.legend()
 plt.show()
 
-print("50th percentile: ",  np.percentile(num_tasks, 50))
-print("90th percentile: ",  np.percentile(num_tasks, 90))
-print("99th percentile: ",  np.percentile(num_tasks, 99))
 '''

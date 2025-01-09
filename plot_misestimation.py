@@ -1,6 +1,9 @@
 from matplotlib import pyplot as plt, rcParams
 import numpy as np
 from palettable.colorbrewer.qualitative import Set2_7
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 colors = Set2_7.mpl_colors
 params = {

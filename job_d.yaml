@@ -27,6 +27,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: JOBPRIO
+          value: "$JOBPRIO"
       imagePullSecrets:
       - name: regcred
       restartPolicy: Never

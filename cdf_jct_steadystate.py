@@ -24,7 +24,8 @@ dc_cpu = {}
 dd_cpu = {}
 variance_cpup = []
 new_cpup = []
-with open("results/utilization/utilization.c.10000J.400X.50N.YH", 'r') as f:
+suffix = "d.10000J.400X.50N.10S.YH"
+with open("results/utilization/utilization." + suffix, 'r') as f:
     c_per_node_cpu = []
     c_per_node_cpup = []
     start_time = 0
@@ -94,15 +95,16 @@ compiled = re.compile(pattern)
 
 #Pod job4-0-fp42b - SchedulerQueueTime 0.0 SchedulingAlgorithmTime 0.0 KubeletQueueTime 0.0 Node "node35.sv440-131085.decentralizedsch-pg0.utah.cloudlab.us" ExecutionTime 0.598316462111 NumSchedulingCycles 1 StartedSecAfter 0.0 QueueAddTime 1900-08-08 05:33:25 TaskCompletionTime 16.0 TaskExecutionStartTime 1900-08-08 05:33:38
 final_jobs = []
+discard_job = []
 execstart = {}
 epoch_start = datetime.max
-with open("results/pods/pods.c.10000J.400X.50N.YH.3",'r') as f:
+with open("results/pods/pods." + suffix+".final",'r') as f:
     for line in f:
         if "Epoch start is" in line:
             epoch_start = extractDateTime(compiled.search(line).group(0))
             print("Epoch start", epoch_start)
             break
-with open("results/pods/pods.c.10000J.400X.50N.YH.3",'r') as f:
+with open("results/pods/pods." + suffix+".final",'r') as f:
     for line in f:
         if "SchedulerQueueTime" not in line:
             continue
@@ -110,14 +112,18 @@ with open("results/pods/pods.c.10000J.400X.50N.YH.3",'r') as f:
         podname = r[1]
         jobname = r[1].split("-")[0]
         if "TAIL TASK" in line:
+            #print(line)
             log = line.split("TaskExecutionStartTime")[1]
             execstart[jobname] = extractDateTime(compiled.search(log).group(0))
             execstartdelta = timeDiff(execstart[jobname], epoch_start)
             if execstartdelta >= steady_state_start and execstartdelta <= steady_state_end:
                 final_jobs.append(jobname)
-
+            else:
+                discard_job.append(jobname)
+print("Number of jobs included", len(final_jobs))
+print("Jobs included", discard_job)
 c=[]
-with open("results/jrt/c.10000J.400X.50N.YH", 'r') as f:
+with open("results/jrt/" + suffix, 'r') as f:
     for r in f:
         if "has JRT" not in r:
             continue

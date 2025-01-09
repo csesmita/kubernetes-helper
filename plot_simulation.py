@@ -127,7 +127,7 @@ params = {
 params = {
    'axes.labelsize': 18,
    'font.size': 18,
-   'legend.fontsize': 13.5,
+   'legend.fontsize': 14.5,
    'xtick.labelsize': 18,
    'ytick.labelsize': 18,
    'text.usetex': False,
@@ -301,10 +301,14 @@ perf_100schedulers = perf[3]
 #addlabels(murmuration_10s, 3*width)
 #plt.bar(x1+width/2 + 4*width, murmuration_100s, width, label="100s delay", color=colors[3])
 #addlabels(murmuration_100s, 4*width)
-plt.bar(x1+width/2 + width, perf_25schedulers, width, label="25% schedulers", color=colors[0], hatch='-', fill=False)
-plt.bar(x1+width/2 + 2*width, perf_50schedulers, width, label="50% schedulers", color=colors[1], hatch='o', fill=False)
-plt.bar(x1+width/2 + 3*width,perf_75schedulers, width, label="75% schedulers", color=colors[2], hatch="/", fill=False)
-plt.bar(x1+width/2 + 4*width, perf_100schedulers,width, label="100% schedulers", color=colors[3], hatch=".", fill=False)
+#plt.bar(x1+width/2 + width, perf_25schedulers, width, label="25% schedulers", color=colors[0], hatch='-', fill=False)
+#plt.bar(x1+width/2 + 2*width, perf_50schedulers, width, label="50% schedulers", color=colors[1], hatch='o', fill=False)
+#plt.bar(x1+width/2 + 3*width,perf_75schedulers, width, label="75% schedulers", color=colors[2], hatch="/", fill=False)
+#plt.bar(x1+width/2 + 4*width, perf_100schedulers,width, label="100% schedulers", color=colors[3], hatch=".", fill=False)
+plt.bar(x1+width/2 + width, perf_25schedulers, width, label="25% schedulers", color=colors[0]) 
+plt.bar(x1+width/2 + 2*width, perf_50schedulers, width, label="50% schedulers", color=colors[1]) 
+plt.bar(x1+width/2 + 3*width,perf_75schedulers, width, label="75% schedulers", color=colors[2]) 
+plt.bar(x1+width/2 + 4*width, perf_100schedulers,width, label="100% schedulers", color=colors[3])
 #plt.xticks(ticks=x1 + width, labels=[str(n) for n in sched_ratio])
 #plt.xticks([10, 100, 1000, 10000, 100000], labels=["10", "100", "1000", "10000", "100000"])
 plt.xticks([0.5, 1.5, 2.5, 3.5], labels=delays)
@@ -321,9 +325,10 @@ plt.yticks([0,1,2,3])
 #ax.ticklabel_format(useOffset=False)
 #style='plain')
 #print("Ticks - locations and labels are", ax.get_xticks())
-legend = plt.legend(loc='best',  ncol=2, handlelength=3)
-for patch in legend.get_patches():
-	patch.set_height(15)
+#legend = plt.legend(loc='best',  ncol=2, handlelength=3)
+#for patch in legend.get_patches():
+#	patch.set_height(15)
+legend = plt.legend(loc='best',  ncol=2)
 frame = legend.get_frame()
 frame.set_facecolor('1.0')
 frame.set_edgecolor('1.0')

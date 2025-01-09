@@ -6,6 +6,10 @@ from matplotlib import pyplot as plt, rcParams
 import os
 from palettable.colorbrewer.qualitative import Set2_7
 
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 colors = Set2_7.mpl_colors
 params = {
    'axes.labelsize': 14,
@@ -293,6 +297,17 @@ bin_array_300S_100X_1C = []
 for idx in range(max_buckets):
     bin_array_300S_100X_1C.append(bins[idx])
 
+params = {
+   'axes.labelsize': 14,
+   'font.size': 14,
+   'legend.fontsize': 14,
+   'xtick.labelsize': 14,
+   'ytick.labelsize': 14,
+   'text.usetex': False,
+   'figure.figsize': [5.6, 2.8],
+}
+rcParams.update(params)
+
 
 
 fig = plt.figure()
@@ -301,8 +316,9 @@ plt.plot(bin_array_50S_500X_1C, label="50 schedulers", color=colors[1])
 plt.plot(bin_array_300S_100X_1C, label="300 schedulers", color=colors[2])
 plt.ylabel("Scheduling throughput")
 plt.xlabel("Time (seconds)")
+print("Max throughput", max(bin_array_10S_500X_1C), max(bin_array_50S_500X_1C), max(bin_array_300S_100X_1C))
 #plt.xticks([0, 200, 400, 600, 800])
-plt.ylim(0,16000)
+plt.ylim(0,10000)
 plt.xlim(0,8000)
 fig.tight_layout()
 plt.legend()

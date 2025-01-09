@@ -98,7 +98,7 @@ params = {
 rcParams.update(params)
 #Show Percentiles
 percentiles=['Murmuration', 'Kubernetes']
-tps=['400 (100%)', '1200 (100%)', '2000 (100%)']
+tps=['400', '1200', '2000']
 x=np.arange(len(tps))
 width=0.35
 y_99_d=[int(np.percentile(d[200], 99)), int(np.percentile(d[600], 99)), int(np.percentile(d[1000], 99))]
@@ -110,7 +110,7 @@ y_d = [int(np.percentile(d[200], 99)), int(np.percentile(d[600], 99)), int(np.pe
 y_c = [int(np.percentile(c[200], 99)), int(np.percentile(c[600], 99)), int(np.percentile(c[1000], 99))]
 labels=[((j)/i) for i,j in zip(y_d, y_c)]
 #addlabels(ax, y, x-width/2)
-ax.set_xlabel("Tasks Per Second (Pod Utilization)")
+ax.set_xlabel("Tasks Per Second")
 ax.set_xticks([0,1,2])
 ax.set_xticklabels(tps)
 rects = ax.patches[0:3]

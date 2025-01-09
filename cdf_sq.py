@@ -5,6 +5,19 @@ from bisect import bisect
 from matplotlib import pyplot as plt
 import os
 import numpy as np
+from matplotlib import pyplot as plt, rcParams
+
+params = {
+   'axes.labelsize': 12,
+   'font.size': 12,
+   'legend.fontsize': 12,
+   'xtick.labelsize': 12,
+   'ytick.labelsize': 12,
+   'text.usetex': False,
+   'figure.figsize': [6.4,3.6]
+}
+rcParams.update(params)
+
 
 #Time width in seconds per bucket
 BUCKET_SIZE = 1
@@ -19,10 +32,11 @@ lr=datetime.min
 f=""
 
 #Compare scheduling times.
-with open('/local/scratch/syslog.c.2h.50X.49N.YH', 'r') as f:
+#with open('results/syslog/syslog.d.10000J.1000X.50N.10S.YH', 'r') as f:
+with open('results/jrt/unsaturated/syslog.d.5000J.50X.47N.10S.YH', 'r') as f:
+#with open('results/syslog/syslog.c.10000J.400X.50N.YH', 'r') as f:
     try:
         for line in f:
-            #print(line)
             if add_event_string not in line: 
                 continue
             podname = line.split(add_event_string)[1].split()[1]
@@ -39,10 +53,10 @@ num_scheduled = len(final_pods)
 
 sched_time = (lr - fr).total_seconds()
 print("File", f)
-print("First unscheduled pod add event", fr, "and last unscheduled pod add event", lr)
+#print("First unscheduled pod add event", fr, "and last unscheduled pod add event", lr)
 tasks_per_sec = num_scheduled / sched_time
 print("Total Tasks Scheduled is ", num_scheduled, "in time", sched_time)
-print("Tasks per sec" , tasks_per_sec)
+print("Average Tasks per sec" , tasks_per_sec)
 
 #######################################################################
 ###BINNED CALCULATIONS#################################################
@@ -60,25 +74,31 @@ for pod in final_pods:
 
 print("Num bins are ", len(bins.keys()), "with size of each bin being", BUCKET_SIZE)
 max_bin_val = bins[max(bins, key=bins.get)]
-print("Max bin value is", max_bin_val)
-print("Max tasks per sec is", max_bin_val / BUCKET_SIZE)
+min_bin_val = bins[min(bins, key=bins.get)]
+#print("Max bin value is", max_bin_val)
+print("Range of bin values - ", max_bin_val - min_bin_val)
+#print("Max tasks per sec is", max_bin_val / BUCKET_SIZE)
 
 num_times = 0
 bin_array = []
 for idx in range(max_buckets):
     bin_array.append(bins[idx])
 print("Total tasks is", sum(bin_array))
+print("Standard deviation is", np.std(bin_array))
 print("Percentiles of bin sizes - ", np.percentile(bin_array, 50),np.percentile(bin_array, 90), np.percentile(bin_array, 99))
 fig = plt.figure()
 print("BIN ARRAY")
 print(len(bin_array))
 plt.plot(bin_array, label="Scheduling Rates Per Second")
-plt.xlabel("Time (s)")
-plt.ylabel("Unscheduled pods per sec")
-plt.title("Rate of new unscheduled pods arriving at the scheduler")
+plt.xlabel("Duration (seconds)")
+#plt.xticks([0,5000,10000,15000,20000])
+plt.ylim(0,200)
+plt.yticks([0,50,100,150,200])
+plt.ylabel("Unscheduled pods / second")
+#plt.title("Rate of new unscheduled pods arriving at the scheduler")
 #plt.show()
 #plt.ylim(0,10000)
 fig.tight_layout()
-fig.savefig('pods_arrive_scheduler.pdf', dpi=fig.dpi, bbox_inches='tight')
+fig.savefig('pods_arrive_scheduler_50X.pdf', dpi=fig.dpi, bbox_inches='tight')
 plt.close()
 print("#################")
